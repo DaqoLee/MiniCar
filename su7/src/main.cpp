@@ -1,4 +1,4 @@
-#if 1
+#if 0
 
 #include <WiFi.h>
 #include <WebServer.h>
@@ -6,65 +6,65 @@
 #include <ESP32PWM.h>
 #include <Servo16.h>
 #include <FastLED.h>
-// 寮曡剼瀹氫箟
-#define MOTOR_A_PWM 6   // 鍚庤疆鐢垫満PWM1
-#define MOTOR_B_PWM 7   // 鍚庤疆鐢垫満PWM2
-#define STEERING_PIN 3  // 鑸垫満鎺у埗寮曡剼
+// 引脚定义
+#define MOTOR_A_PWM 6   // 后轮电机PWM1
+#define MOTOR_B_PWM 7   // 后轮电机PWM2
+#define STEERING_PIN 3  // 舵机控制引脚
 #define CAR_SLEEP_PIN 5 
 #define POWER_KEY_PIN 1
-#define BATTERY_PIN 0   // 鐢垫睜鐢靛帇妫€娴嬪紩鑴� (IO0)
+#define BATTERY_PIN 0   // 电池电压检测引脚 (IO0)
 #define POWER_PIN 10
 #define RGB_PIN 4
 
 #define NUM_LEDS 1
 CRGB leds[NUM_LEDS];
-// WiFi璁剧疆
+// WiFi设置
 const char* ssid = "ESP32C3-Car";
 const char* password = "12345678";
 
 WebServer server(80);
 WebSocketsServer webSocket = WebSocketsServer(81);
 
-// 鑸垫満鍙傛暟
-const int servoMin = 1050;   // 0搴﹀搴旂殑鑴夊啿瀹藉害(us)
-const int servoMax = 1650;  // 180搴﹀搴旂殑鑴夊啿瀹藉害(us)
-const int servoCenter = 1350; // 涓棿浣嶇疆(90锟�?)
+// 舵机参数
+const int servoMin = 1050;   // 0度对应的脉冲宽度(us)
+const int servoMax = 1650;  // 180度对应的脉冲宽度(us)
+const int servoCenter = 1350; // 中间位置(90�?)
 int currentSteering = servoCenter;
 Servo myservo; 
-// 鐢垫満閫熷害鎺у埗
+// 电机速度控制
 int currentSpeed = 0;
 const int maxSpeed = 255;
 
 void PowerTask(void *pvParameters);
-// 璇诲彇鐢垫睜鐢靛帇
+// 读取电池电压
 
-// 鐢垫睜鍙傛暟
+// 电池参数
 float batteryVoltage = 0.0;
 float batteryPercentage = 0.0;
-const float maxBatteryVoltage = 4.2; // 2S閿傜數姹犳弧鐢电數鍘�(8.4V)
-const float minBatteryVoltage = 3.0; // 2S閿傜數姹犳渶浣庣數鍘�(6.0V)
-const float voltageDividerRatio = 2.0; // 鍒嗗帇姣� (涓や釜100K鐢甸樆鍒嗗帇)
+const float maxBatteryVoltage = 4.2; // 2S锂电池满电电压(8.4V)
+const float minBatteryVoltage = 3.0; // 2S锂电池最低电压(6.0V)
+const float voltageDividerRatio = 2.0; // 分压比 (两个100K电阻分压)
 unsigned long lastBatteryUpdate = 0;
-const long batteryUpdateInterval = 2000; // 姣�2绉掓洿鏂颁竴娆＄數姹犱俊鎭�
+const long batteryUpdateInterval = 2000; // 每2秒更新一次电池信息
 
 void updateBatteryInfo() {
-  // 璇诲彇ADC鍊硷紙0-4095锛�
+  // 读取ADC值（0-4095）
   int rawValue = analogRead(BATTERY_PIN);
   
-  // 璁＄畻瀹為檯鐢靛帇锛堝垎鍘嬫瘮2:1锛孉DC鍙傝€冪數鍘�3.3V锛�
+  // 计算实际电压（分压比2:1，ADC参考电压3.3V）
   batteryVoltage = (((float)rawValue / 4095.0) * 3.3 * voltageDividerRatio) - 0.4;
   
-  // 璁＄畻鐢甸噺鐧惧垎姣旓紙绾挎€т及绠楋級
+  // 计算电量百分比（线性估算）
   batteryPercentage = map(constrain(batteryVoltage*100, minBatteryVoltage*100, maxBatteryVoltage*100), 
                           minBatteryVoltage*100, maxBatteryVoltage*100, 0, 100);
   
-  // 骞挎挱鐢垫睜淇℃伅缁欐墍鏈夊鎴风
+  // 广播电池信息给所有客户端
   String batteryInfo = "battery:" + String(batteryVoltage, 1) + "," + String(batteryPercentage, 0);
   webSocket.broadcastTXT(batteryInfo);
   
   Serial.printf("Battery: %.1fV (%d%%)\n", batteryVoltage, (int)batteryPercentage);
 }
-// WebSocket浜嬩欢澶勭悊
+// WebSocket事件处理
 void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length) {
   switch(type) {
     case WStype_DISCONNECTED:
@@ -80,7 +80,7 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length
     case WStype_TEXT:
       Serial.printf("[%u] Received: %s\n", num, payload);
       
-      // 瑙ｆ瀽鎽囨潌鏁版嵁: "x,y" 鏍煎紡
+      // 解析摇杆数据: "x,y" 格式
       char *token = strtok((char *)payload, ",");
       if(token != NULL) {
         int x = atoi(token);
@@ -88,30 +88,30 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length
         if(token != NULL) {
           int y = atoi(token);
           
-          // 鎺у埗鑸垫満鏂瑰悜 (x锟�?: -100锟�?100)
+          // 控制舵机方向 (x�?: -100�?100)
           int steering = map(-x, -100, 100, servoMin, servoMax);
           steering = constrain(steering, servoMin, servoMax);
          	myservo.writeMicroseconds(steering);
           currentSteering = steering;
            Serial.printf("%d  steering :%d\n", x, steering);
           
-          // 鎺у埗鐢垫満閫熷害 (y锟�?: -100锟�?100)
+          // 控制电机速度 (y�?: -100�?100)
           int speed = map(abs(y), 0, 100, 0, maxSpeed);
           speed = constrain(speed, 0, maxSpeed);
           
-          if(y > 10) { // 鍓嶈繘
-            ledcWrite(0, speed);  // 閫氶亾1鐢ㄤ簬鐢垫満A
-            ledcWrite(1, 0);      // 閫氶亾2鐢ㄤ簬鐢垫満B
+          if(y > 10) { // 前进
+            ledcWrite(0, speed);  // 通道1用于电机A
+            ledcWrite(1, 0);      // 通道2用于电机B
             currentSpeed = speed;
             webSocket.sendTXT(num, "Moving Forward");
           } 
-          else if(y < -10) { // 鍚庨€€
+          else if(y < -10) { // 后退
             ledcWrite(0, 0);
             ledcWrite(1, speed);
             currentSpeed = -speed;
             webSocket.sendTXT(num, "Moving Backward");
           } 
-          else { // 鍋滄
+          else { // 停止
             ledcWrite(0, 0);
             ledcWrite(1, 0);
             currentSpeed = 0;
@@ -124,7 +124,7 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length
 }
 
 #if 0
-// 鎻愪緵Web鐣岄潰
+// 提供Web界面
 void handleRoot() {
   String html = R"rawliteral(
   <!DOCTYPE html>
@@ -327,7 +327,7 @@ void handleRoot() {
       <div class="status-panel">
         <div class="status-item">
           <div>Steering</div>
-          <div class="status-value" id="steeringValue">90掳</div>
+          <div class="status-value" id="steeringValue">90°</div>
         </div>
         <div class="status-item">
           <div>Speed</div>
@@ -344,15 +344,15 @@ void handleRoot() {
       </div>
       
       <div class="instructions">
-        <h3>馃搵 Instructions:</h3>
-        <p>馃摱 1. Connect to WiFi: <strong>ESP32C3-Car</strong> (Password: 12345678)</p>
-        <p>馃暪锟�? 2. Drag the joystick to control the car</p>
-        <p>馃攲 3. Connection Status: <span id="wsStatus">Disconnected</span></p>
-        <p>鈿狅笍 4. Release joystick to stop the car</p>
+        <h3>📋 Instructions:</h3>
+        <p>📶 1. Connect to WiFi: <strong>ESP32C3-Car</strong> (Password: 12345678)</p>
+        <p>🕹�? 2. Drag the joystick to control the car</p>
+        <p>🔌 3. Connection Status: <span id="wsStatus">Disconnected</span></p>
+        <p>⚠️ 4. Release joystick to stop the car</p>
       </div>
       
       <div class="footer">
-        ESP32C3 Joystick Control | WebSocket Real-time | Made with 鉂わ笍
+        ESP32C3 Joystick Control | WebSocket Real-time | Made with ❤️
       </div>
     </div>
     
@@ -365,7 +365,7 @@ void handleRoot() {
       let joystickPos = { x: 0, y: 0 };
       let isDragging = false;
       
-      // 鍒濆鍖朩ebSocket杩炴帴
+      // 初始化WebSocket连接
       function initWebSocket() {
         const ip = window.location.hostname;
         websocket = new WebSocket('ws://' + ip + ':81/');
@@ -396,31 +396,31 @@ void handleRoot() {
         };
       }
       
-      // 鍙戦€佹帶鍒跺懡锟�?
+      // 发送控制命�?
       function sendCommand(x, y) {
         if (isConnected) {
           const command = `${x},${y}`;
           websocket.send(command);
           
-          // 鏇存柊UI
+          // 更新UI
           document.getElementById('steeringValue').textContent = 
-            Math.round(mapRange(x, -200, 200, 0, 180)) + '掳';
+            Math.round(mapRange(x, -200, 200, 0, 180)) + '°';
             
           document.getElementById('speedValue').textContent = 
             Math.round(Math.abs(y)) + '%';
             
-          // 鏇存柊鏂瑰悜鐩樿锟�?
+          // 更新方向盘角�?
           const steeringAngle = mapRange(x, -200, 200, -180, 180);
           steeringWheel.style.transform = `rotate(${steeringAngle}deg)`;
         }
       }
       
-      // 鏄犲皠鑼冨洿鍑芥暟
+      // 映射范围函数
       function mapRange(value, inMin, inMax, outMin, outMax) {
         return (value - inMin) * (outMax - outMin) / (inMax - inMin) + outMin;
       }
       
-      // 澶勭悊鎽囨潌鎷栧姩
+      // 处理摇杆拖动
       function startDrag(e) {
         isDragging = true;
         joystick.style.transition = 'none';
@@ -434,8 +434,8 @@ void handleRoot() {
         sendCommand(0, 0);
         joystickPos = { x: 0, y: 0 };
         
-        // 閲嶇疆UI
-        document.getElementById('steeringValue').textContent = '90掳';
+        // 重置UI
+        document.getElementById('steeringValue').textContent = '90°';
         document.getElementById('speedValue').textContent = '0%';
         steeringWheel.style.transform = 'rotate(0deg)';
       }
@@ -460,31 +460,31 @@ void handleRoot() {
         const x = clientX - rect.left - centerX;
         const y = clientY - rect.top - centerY;
         
-        // 闄愬埗鍦ㄥ渾褰㈣寖鍥村唴
+        // 限制在圆形范围内
         const distance = Math.min(Math.sqrt(x*x + y*y), centerX - 50);
         const angle = Math.atan2(y, x);
         
         joystickPos.x = Math.cos(angle) * distance;
         joystickPos.y = Math.sin(angle) * distance;
         
-        // 鏇存柊鎽囨潌浣嶇疆
+        // 更新摇杆位置
         joystick.style.transform = `translate(${joystickPos.x}px, ${joystickPos.y}px)`;
         
-        // 杞崲涓虹櫨鍒嗘瘮 (-100锟�?100)
+        // 转换为百分比 (-100�?100)
         const xPercent = Math.round(mapRange(joystickPos.x, -centerX + 50, centerX - 50, -200, 200));
         const yPercent = Math.round(mapRange(joystickPos.y, -centerY + 50, centerY - 50, -100, 100));
         
         sendCommand(xPercent, yPercent);
       }
       
-      // 鍒濆鍖栦簨浠剁洃鍚櫒
+      // 初始化事件监听器
       function initControls() {
-        // 榧犳爣浜嬩欢
+        // 鼠标事件
         joystick.addEventListener('mousedown', startDrag);
         document.addEventListener('mousemove', updateJoystick);
         document.addEventListener('mouseup', stopDrag);
         
-        // 瑙︽懜浜嬩欢
+        // 触摸事件
         joystick.addEventListener('touchstart', (e) => {
           e.preventDefault();
           startDrag(e);
@@ -499,7 +499,7 @@ void handleRoot() {
         document.addEventListener('touchcancel', stopDrag);
       }
       
-      // 椤甸潰鍔犺浇鏃跺垵濮嬪寲
+      // 页面加载时初始化
       window.onload = function() {
         initWebSocket();
         initControls();
@@ -739,7 +739,7 @@ void handleRoot() {
       
       <div class="connection-status" id="connectionStatus">Disconnected</div>
       
-      <!-- 鐢垫睜鐢甸噺鏄剧ず -->
+      <!-- 电池电量显示 -->
       <div class="battery-container">
         <div class="battery-header">
           <div class="battery-info">Battery Status</div>
@@ -754,7 +754,7 @@ void handleRoot() {
       <div class="status-panel">
         <div class="status-item">
           <div class="status-label">Steering</div>
-          <div class="status-value" id="steeringValue">90掳</div>
+          <div class="status-value" id="steeringValue">90°</div>
         </div>
         <div class="status-item">
           <div class="status-label">Speed</div>
@@ -768,20 +768,20 @@ void handleRoot() {
       
       <div class="joystick-container" id="joystickContainer">
         <div class="joystick" id="joystick"></div>
-        <div class="direction-indicator" id="directionIndicator">鈼�</div>
+        <div class="direction-indicator" id="directionIndicator">●</div>
       </div>
       
       <div class="instructions">
-        <h3>馃搵 Instructions:</h3>
-        <p>馃摱 1. Connect to WiFi: <strong>ESP32C3-Car</strong> (Password: 12345678)</p>
-        <p>馃暪锔� 2. Drag the joystick to control the car</p>
-        <p>馃攱 3. Battery status updated every 2 seconds</p>
-        <p>鈿狅笍 4. Release joystick to stop the car</p>
-        <p>馃攲 5. Connection Status: <span id="wsStatus">Disconnected</span></p>
+        <h3>📋 Instructions:</h3>
+        <p>📶 1. Connect to WiFi: <strong>ESP32C3-Car</strong> (Password: 12345678)</p>
+        <p>🕹️ 2. Drag the joystick to control the car</p>
+        <p>🔋 3. Battery status updated every 2 seconds</p>
+        <p>⚠️ 4. Release joystick to stop the car</p>
+        <p>🔌 5. Connection Status: <span id="wsStatus">Disconnected</span></p>
       </div>
       
       <div class="footer">
-        ESP32C3 Joystick Control | Battery Monitoring | Made with 鉂わ笍
+        ESP32C3 Joystick Control | Battery Monitoring | Made with ❤️
       </div>
     </div>
     
@@ -794,7 +794,7 @@ void handleRoot() {
       let joystickPos = { x: 0, y: 0 };
       let isDragging = false;
       
-      // 鍒濆鍖朩ebSocket杩炴帴
+      // 初始化WebSocket连接
       function initWebSocket() {
         const ip = window.location.hostname;
         websocket = new WebSocket('ws://' + ip + ':81/');
@@ -819,7 +819,7 @@ void handleRoot() {
         websocket.onmessage = function(event) {
           console.log('Received: ' + event.data);
           
-          // 妫€鏌ユ槸鍚︽槸鐢垫睜淇℃伅
+          // 检查是否是电池信息
           if(event.data.startsWith("battery:")) {
             const batteryData = event.data.substring(8).split(",");
             const voltage = parseFloat(batteryData[0]);
@@ -834,7 +834,7 @@ void handleRoot() {
         };
       }
       
-      // 鏇存柊鐢垫睜UI
+      // 更新电池UI
       function updateBatteryUI(voltage, percentage) {
         document.getElementById('batteryVoltage').textContent = voltage.toFixed(1) + 'V';
         document.getElementById('batteryPercentage').textContent = percentage.toFixed(0) + '%';
@@ -843,7 +843,7 @@ void handleRoot() {
         const batteryFill = document.getElementById('batteryFill');
         batteryFill.style.width = percentage + '%';
         
-        // 鏍规嵁鐢甸噺鏀瑰彉棰滆壊
+        // 根据电量改变颜色
         if(percentage > 60) {
           batteryFill.style.background = 'linear-gradient(90deg, #2ecc71, #2ecc71)';
         } else if(percentage > 30) {
@@ -853,55 +853,55 @@ void handleRoot() {
         }
       }
       
-      // 鍙戦€佹帶鍒跺懡浠�
+      // 发送控制命令
       function sendCommand(x, y) {
         if (isConnected) {
           const command = `${x},${y}`;
           websocket.send(command);
           
-          // 鏇存柊UI
+          // 更新UI
           document.getElementById('steeringValue').textContent = 
-            Math.round(mapRange(x, -100, 100, 0, 180)) + '掳';
+            Math.round(mapRange(x, -100, 100, 0, 180)) + '°';
             
           document.getElementById('speedValue').textContent = 
             Math.round(Math.abs(y)) + '%';
             
-          // 鏇存柊鏂瑰悜鎸囩ず鍣�
+          // 更新方向指示器
           updateDirectionIndicator(x, y);
         }
       }
       
-      // 鏇存柊鏂瑰悜鎸囩ず鍣�
+      // 更新方向指示器
       function updateDirectionIndicator(x, y) {
-        let directionSymbol = "鈼�"; // 榛樿鍋滄
+        let directionSymbol = "●"; // 默认停止
         
         if (y > 50) {
-          directionSymbol = "鈫�"; // 鍓嶈繘
+          directionSymbol = "↑"; // 前进
         } else if (y < -50) {
-          directionSymbol = "鈫�"; // 鍚庨€€
+          directionSymbol = "↓"; // 后退
         } else if (x > 50) {
-          directionSymbol = "鈫�"; // 鍙宠浆
+          directionSymbol = "→"; // 右转
         } else if (x < -50) {
-          directionSymbol = "鈫�"; // 宸﹁浆
+          directionSymbol = "←"; // 左转
         } else if (y > 10) {
-          directionSymbol = "鈫�"; // 鍓嶈繘+鍙宠浆
+          directionSymbol = "↗"; // 前进+右转
         } else if (y < -10) {
-          directionSymbol = "鈫�"; // 鍚庨€€+鍙宠浆
+          directionSymbol = "↘"; // 后退+右转
         } else if (x > 10 && y > 10) {
-          directionSymbol = "鈫�"; // 鍓嶈繘+宸﹁浆
+          directionSymbol = "↖"; // 前进+左转
         } else if (x < -10 && y < -10) {
-          directionSymbol = "鈫�"; // 鍚庨€€+宸﹁浆
+          directionSymbol = "↙"; // 后退+左转
         }
         
         directionIndicator.textContent = directionSymbol;
       }
       
-      // 鏄犲皠鑼冨洿鍑芥暟
+      // 映射范围函数
       function mapRange(value, inMin, inMax, outMin, outMax) {
         return (value - inMin) * (outMax - outMin) / (inMax - inMin) + outMin;
       }
       
-      // 澶勭悊鎽囨潌鎷栧姩
+      // 处理摇杆拖动
       function startDrag(e) {
         isDragging = true;
         joystick.style.transition = 'none';
@@ -915,10 +915,10 @@ void handleRoot() {
         sendCommand(0, 0);
         joystickPos = { x: 0, y: 0 };
         
-        // 閲嶇疆UI
-        document.getElementById('steeringValue').textContent = '90掳';
+        // 重置UI
+        document.getElementById('steeringValue').textContent = '90°';
         document.getElementById('speedValue').textContent = '0%';
-        directionIndicator.textContent = "鈼�"; // 閲嶇疆鏂瑰悜鎸囩ず鍣�
+        directionIndicator.textContent = "●"; // 重置方向指示器
       }
       
       function updateJoystick(e) {
@@ -941,31 +941,31 @@ void handleRoot() {
         const x = clientX - rect.left - centerX;
         const y = clientY - rect.top - centerY;
         
-        // 闄愬埗鍦ㄥ渾褰㈣寖鍥村唴
+        // 限制在圆形范围内
         const distance = Math.min(Math.sqrt(x*x + y*y), centerX - 50);
         const angle = Math.atan2(y, x);
         
         joystickPos.x = Math.cos(angle) * distance;
         joystickPos.y = Math.sin(angle) * distance;
         
-        // 鏇存柊鎽囨潌浣嶇疆
+        // 更新摇杆位置
         joystick.style.transform = `translate(${joystickPos.x}px, ${joystickPos.y}px)`;
         
-        // 杞崲涓虹櫨鍒嗘瘮 (-100鍒�100)
+        // 转换为百分比 (-100到100)
         const xPercent = Math.round(mapRange(joystickPos.x, -centerX + 50, centerX - 50, -100, 100));
         const yPercent = Math.round(mapRange(joystickPos.y, -centerY + 50, centerY - 50, -100, 100));
         
         sendCommand(xPercent, yPercent);
       }
       
-      // 鍒濆鍖栦簨浠剁洃鍚櫒
+      // 初始化事件监听器
       function initControls() {
-        // 榧犳爣浜嬩欢
+        // 鼠标事件
         joystick.addEventListener('mousedown', startDrag);
         document.addEventListener('mousemove', updateJoystick);
         document.addEventListener('mouseup', stopDrag);
         
-        // 瑙︽懜浜嬩欢
+        // 触摸事件
         joystick.addEventListener('touchstart', (e) => {
           e.preventDefault();
           startDrag(e);
@@ -980,7 +980,7 @@ void handleRoot() {
         document.addEventListener('touchcancel', stopDrag);
       }
       
-      // 椤甸潰鍔犺浇鏃跺垵濮嬪寲
+      // 页面加载时初始化
       window.onload = function() {
         initWebSocket();
         initControls();
@@ -1244,7 +1244,7 @@ void handleRoot() {
       
       <div class="connection-status" id="connectionStatus">Disconnected</div>
       
-      <!-- 鐢垫睜鐢甸噺鏄剧ず -->
+      <!-- 电池电量显示 -->
       <div class="battery-container">
         <div class="battery-header">
           <div class="battery-info">Battery Status</div>
@@ -1259,7 +1259,7 @@ void handleRoot() {
       <div class="status-panel">
         <div class="status-item">
           <div class="status-label">Steering</div>
-          <div class="status-value" id="steeringValue">90掳</div>
+          <div class="status-value" id="steeringValue">90°</div>
         </div>
         <div class="status-item">
           <div class="status-label">Speed</div>
@@ -1280,16 +1280,16 @@ void handleRoot() {
       </div>
       
       <div class="instructions">
-        <h3>馃搵 Instructions:</h3>
-        <p>馃摱 1. Connect to WiFi: <strong>ESP32C3-Car</strong> (Password: 12345678)</p>
-        <p>馃暪锔� 2. Drag the joystick to control the car</p>
-        <p>馃攱 3. Battery status is updated every 2 seconds</p>
-        <p>鈿狅笍 4. Release joystick to stop the car</p>
-        <p>馃攲 5. Connection Status: <span id="wsStatus">Disconnected</span></p>
+        <h3>📋 Instructions:</h3>
+        <p>📶 1. Connect to WiFi: <strong>ESP32C3-Car</strong> (Password: 12345678)</p>
+        <p>🕹️ 2. Drag the joystick to control the car</p>
+        <p>🔋 3. Battery status is updated every 2 seconds</p>
+        <p>⚠️ 4. Release joystick to stop the car</p>
+        <p>🔌 5. Connection Status: <span id="wsStatus">Disconnected</span></p>
       </div>
       
       <div class="footer">
-        ESP32C3 Joystick Control | Battery Monitoring | Made with 鉂わ笍
+        ESP32C3 Joystick Control | Battery Monitoring | Made with ❤️
       </div>
     </div>
     
@@ -1302,7 +1302,7 @@ void handleRoot() {
       let joystickPos = { x: 0, y: 0 };
       let isDragging = false;
       
-      // 鍒濆鍖朩ebSocket杩炴帴
+      // 初始化WebSocket连接
       function initWebSocket() {
         const ip = window.location.hostname;
         websocket = new WebSocket('ws://' + ip + ':81/');
@@ -1327,7 +1327,7 @@ void handleRoot() {
         websocket.onmessage = function(event) {
           console.log('Received: ' + event.data);
           
-          // 妫€鏌ユ槸鍚︽槸鐢垫睜淇℃伅
+          // 检查是否是电池信息
           if(event.data.startsWith("battery:")) {
             const batteryData = event.data.substring(8).split(",");
             const voltage = parseFloat(batteryData[0]);
@@ -1342,7 +1342,7 @@ void handleRoot() {
         };
       }
       
-      // 鏇存柊鐢垫睜UI
+      // 更新电池UI
       function updateBatteryUI(voltage, percentage) {
         document.getElementById('batteryVoltage').textContent = voltage.toFixed(1) + 'V';
         document.getElementById('batteryPercentage').textContent = percentage.toFixed(0) + '%';
@@ -1351,7 +1351,7 @@ void handleRoot() {
         const batteryFill = document.getElementById('batteryFill');
         batteryFill.style.width = percentage + '%';
         
-        // 鏍规嵁鐢甸噺鏀瑰彉棰滆壊
+        // 根据电量改变颜色
         if(percentage > 60) {
           batteryFill.style.background = 'linear-gradient(90deg, #2ecc71, #2ecc71)';
         } else if(percentage > 30) {
@@ -1361,31 +1361,31 @@ void handleRoot() {
         }
       }
       
-      // 鍙戦€佹帶鍒跺懡浠�
+      // 发送控制命令
       function sendCommand(x, y) {
         if (isConnected) {
           const command = `${x},${y}`;
           websocket.send(command);
           
-          // 鏇存柊UI
+          // 更新UI
           document.getElementById('steeringValue').textContent = 
-            Math.round(mapRange(x, -100, 100, 0, 180)) + '掳';
+            Math.round(mapRange(x, -100, 100, 0, 180)) + '°';
             
           document.getElementById('speedValue').textContent = 
             Math.round(Math.abs(y)) + '%';
             
-          // 鏇存柊鏂瑰悜鐩樿搴�
+          // 更新方向盘角度
           const steeringAngle = mapRange(x, -100, 100, -180, 180);
           steeringWheel.style.transform = `rotate(${steeringAngle}deg)`;
         }
       }
       
-      // 鏄犲皠鑼冨洿鍑芥暟
+      // 映射范围函数
       function mapRange(value, inMin, inMax, outMin, outMax) {
         return (value - inMin) * (outMax - outMin) / (inMax - inMin) + outMin;
       }
       
-      // 澶勭悊鎽囨潌鎷栧姩
+      // 处理摇杆拖动
       function startDrag(e) {
         isDragging = true;
         joystick.style.transition = 'none';
@@ -1399,8 +1399,8 @@ void handleRoot() {
         sendCommand(0, 0);
         joystickPos = { x: 0, y: 0 };
         
-        // 閲嶇疆UI
-        document.getElementById('steeringValue').textContent = '90掳';
+        // 重置UI
+        document.getElementById('steeringValue').textContent = '90°';
         document.getElementById('speedValue').textContent = '0%';
         steeringWheel.style.transform = 'rotate(0deg)';
       }
@@ -1425,31 +1425,31 @@ void handleRoot() {
         const x = clientX - rect.left - centerX;
         const y = clientY - rect.top - centerY;
         
-        // 闄愬埗鍦ㄥ渾褰㈣寖鍥村唴
+        // 限制在圆形范围内
         const distance = Math.min(Math.sqrt(x*x + y*y), centerX - 50);
         const angle = Math.atan2(y, x);
         
         joystickPos.x = Math.cos(angle) * distance;
         joystickPos.y = Math.sin(angle) * distance;
         
-        // 鏇存柊鎽囨潌浣嶇疆
+        // 更新摇杆位置
         joystick.style.transform = `translate(${joystickPos.x}px, ${joystickPos.y}px)`;
         
-        // 杞崲涓虹櫨鍒嗘瘮 (-100鍒�100)
+        // 转换为百分比 (-100到100)
         const xPercent = Math.round(mapRange(joystickPos.x, -centerX + 50, centerX - 50, -100, 100));
         const yPercent = Math.round(mapRange(joystickPos.y, -centerY + 50, centerY - 50, -100, 100));
         
         sendCommand(xPercent, yPercent);
       }
       
-      // 鍒濆鍖栦簨浠剁洃鍚櫒
+      // 初始化事件监听器
       function initControls() {
-        // 榧犳爣浜嬩欢
+        // 鼠标事件
         joystick.addEventListener('mousedown', startDrag);
         document.addEventListener('mousemove', updateJoystick);
         document.addEventListener('mouseup', stopDrag);
         
-        // 瑙︽懜浜嬩欢
+        // 触摸事件
         joystick.addEventListener('touchstart', (e) => {
           e.preventDefault();
           startDrag(e);
@@ -1464,7 +1464,7 @@ void handleRoot() {
         document.addEventListener('touchcancel', stopDrag);
       }
       
-      // 椤甸潰鍔犺浇鏃跺垵濮嬪寲
+      // 页面加载时初始化
       window.onload = function() {
         initWebSocket();
         initControls();
@@ -1485,19 +1485,19 @@ void setup() {
   digitalWrite(POWER_PIN, HIGH);
   Serial.begin(115200);
   
-  // 璁剧疆鑸垫満PWM
-  // ledcSetup(0, 50, 16); // 閫氶亾0, 50Hz, 16浣嶅垎杈ㄧ巼
+  // 设置舵机PWM
+  // ledcSetup(0, 50, 16); // 通道0, 50Hz, 16位分辨率
   // ledcAttachPin(STEERING_PIN, 0);
-  // ledcWrite(0, servoCenter); // 鍒濆浣嶇疆灞呬腑
+  // ledcWrite(0, servoCenter); // 初始位置居中
 
 	myservo.setPeriodHertz(50);    // standard 50 hz servo
 	myservo.attach(STEERING_PIN, 2, 1000, 2000); // attaches the servo on pin 18 to the servo object
 	myservo.writeMicroseconds(servoCenter); 
   
-  // 璁剧疆鐢垫満PWM
-  ledcSetup(0, 5000, 8); // 閫氶亾1, 5kHz, 8浣嶅垎杈ㄧ巼
+  // 设置电机PWM
+  ledcSetup(0, 5000, 8); // 通道1, 5kHz, 8位分辨率
   ledcAttachPin(MOTOR_A_PWM, 0);
-  ledcSetup(1, 5000, 8); // 閫氶亾2, 5kHz, 8浣嶅垎杈ㄧ巼
+  ledcSetup(1, 5000, 8); // 通道2, 5kHz, 8位分辨率
   ledcAttachPin(MOTOR_B_PWM, 1);
 
   pinMode(CAR_SLEEP_PIN,OUTPUT);
@@ -1505,37 +1505,37 @@ void setup() {
 
   pinMode(POWER_KEY_PIN, INPUT);
   
-  analogReadResolution(12); // 12浣嶅垎杈ㄧ巼 (0-4095)
+  analogReadResolution(12); // 12位分辨率 (0-4095)
   // pinMode(BATTERY_PIN, INPUT);
   updateBatteryInfo();
 
   FastLED.addLeds<NEOPIXEL, RGB_PIN>(leds, NUM_LEDS); 
 /*
-    HUE_RED = 0,       ///< Red (0掳)
-    HUE_ORANGE = 32,   ///< Orange (45掳)
-    HUE_YELLOW = 64,   ///< Yellow (90掳)
-    HUE_GREEN = 96,    ///< Green (135掳)
-    HUE_AQUA = 128,    ///< Aqua (180掳)
-    HUE_BLUE = 160,    ///< Blue (225掳)
-    HUE_PURPLE = 192,  ///< Purple (270掳)
-    HUE_PINK = 224     ///< Pink (315掳)
+    HUE_RED = 0,       ///< Red (0°)
+    HUE_ORANGE = 32,   ///< Orange (45°)
+    HUE_YELLOW = 64,   ///< Yellow (90°)
+    HUE_GREEN = 96,    ///< Green (135°)
+    HUE_AQUA = 128,    ///< Aqua (180°)
+    HUE_BLUE = 160,    ///< Blue (225°)
+    HUE_PURPLE = 192,  ///< Purple (270°)
+    HUE_PINK = 224     ///< Pink (315°)
 */
   leds[0] = CHSV(HUE_YELLOW, 255, 30);
   FastLED.show();
-  // 璁剧疆WiFi AP
+  // 设置WiFi AP
   WiFi.softAP(ssid, password);
   
   Serial.print("AP IP address: ");
   Serial.println(WiFi.softAPIP());
   
-  // 璁剧疆鏈嶅姟鍣ㄨ矾锟�?
+  // 设置服务器路�?
   server.on("/", handleRoot);
   
-  // 鍚姩WebSocket鏈嶅姟锟�?
+  // 启动WebSocket服务�?
   webSocket.begin();
   webSocket.onEvent(webSocketEvent);
   
-  // 鍚姩HTTP鏈嶅姟锟�?
+  // 启动HTTP服务�?
   server.begin();
   Serial.println("HTTP and WebSocket servers started");
 
@@ -1591,19 +1591,19 @@ void loop() {
 #include <Servo16.h>
 // #include <ESP32Servo.h>
 const int servoCenter = 1350;
-// 鐢垫満鍜岃埖鏈哄紩鑴氬畾涔�
-#define MOTOR_PWM_A 6   // 鍚庤疆鐢垫満A PWM
-#define MOTOR_PWM_B 7   // 鍚庤疆鐢垫満B PWM
-#define STEERING_PIN 3  // 鍓嶈疆鑸垫満
 
-// 鐢垫満PWM閰嶇疆
+#define MOTOR_PWM_A 6   
+#define MOTOR_PWM_B 7   
+#define STEERING_PIN 3  
+
+
 #define PWM_FREQ 5000
-#define PWM_RES 8       // 8浣嶅垎杈ㄧ巼锛�0-255锛�
+#define PWM_RES 8       
 
-// 鑸垫満瀵硅薄
+
 // Servo steeringServo;
 Servo myservo; 
-// 鏁版嵁缁撴瀯锛堝繀椤讳笌鍙戦€佺涓€鑷达級
+
 typedef struct struct_message {
   int16_t joy1X;
   int16_t joy1Y;
@@ -1612,29 +1612,29 @@ typedef struct struct_message {
 } struct_message;
 struct_message rxData;
 
-// 鐢垫満鎺у埗鍑芥暟
+
 void setMotorSpeed(int speed) {
-  if (speed > 0) {  // 鍓嶈繘
+  if (speed > 0) {  
     ledcWrite(0, speed);
     ledcWrite(1, 0);
-  } else if (speed < 0) {  // 鍚庨€€
+  } else if (speed < 0) {  
     ledcWrite(0, 0);
     ledcWrite(1, -speed);
-  } else {  // 鍋滄
+  } else {  
     ledcWrite(0, 0);
     ledcWrite(1, 0);
   }
 }
 
-// 鎺ユ敹鏁版嵁鍥炶皟
+
 void onDataRecv(const uint8_t *mac, const uint8_t *data, int len) {
   memcpy(&rxData, data, sizeof(rxData));
   
-  // 鎺у埗鑸垫満锛氭憞鏉�1X杞� -> 鑸垫満瑙掑害锛堟槧灏勫埌0-180掳锛�
+  
   int servoAngle = map(rxData.joy2Y, 0, 4095, 1150, 1550);
   // steeringServo.write(servoAngle);
   myservo.writeMicroseconds(servoAngle); 
-  // 鎺у埗鐢垫満锛氭憞鏉�1Y杞� -> 鐢垫満閫熷害锛堟槧灏勫埌-255~255锛�
+  // 
   int motorSpeed = map(rxData.joy1X, 0, 4095, 255, -255);
 
   setMotorSpeed(motorSpeed);
@@ -1651,10 +1651,10 @@ void setup() {
   digitalWrite(10,HIGH);
   Serial.begin(115200);
   WiFi.mode(WIFI_STA);
-
-  // 鍒濆鍖栫數鏈篜WM
-  ledcSetup(0, PWM_FREQ, PWM_RES);  // 閫氶亾0 - 鐢垫満A
-  ledcSetup(1, PWM_FREQ, PWM_RES);  // 閫氶亾1 - 鐢垫満B
+  WiFi.setSleep(false);
+  //
+  ledcSetup(0, PWM_FREQ, PWM_RES);  // 
+  ledcSetup(1, PWM_FREQ, PWM_RES);  // 
   ledcAttachPin(MOTOR_PWM_A, 0);
   ledcAttachPin(MOTOR_PWM_B, 1);
 
@@ -1666,26 +1666,25 @@ void setup() {
 	myservo.writeMicroseconds(servoCenter); 
   
 
-  // 鍒濆鍖栬埖鏈�
+  //
   // steeringServo.attach(STEERING_PIN);
-  // steeringServo.write(90);  // 鍒濆灞呬腑浣嶇疆
-
-  // 鍒濆鍖朎SP-NOW
+  // steeringServo.write(90);  // 
+  //
   if (esp_now_init() != ESP_OK) {
-    Serial.println("ESP-NOW鍒濆鍖栧け璐�");
+    Serial.println("ESP-NOW");
     return;
   }
 
   Serial.print("ESP32-C3 MAC Address: ");
   Serial.println(WiFi.macAddress());
 
-  // 娉ㄥ唽鎺ユ敹鍥炶皟
+
   // esp_now_set_self_role(ESP_NOW_ROLE_SLAVE);
   esp_now_register_recv_cb(onDataRecv);
 }
 
 void loop() {
-  // 涓诲惊鐜棤闇€鎿嶄綔锛屾暟鎹湪鍥炶皟涓鐞�
+
   // Serial.println("ESP32-C3 MAC Address: ");
   delay(100);
 }
