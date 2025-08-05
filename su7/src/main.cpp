@@ -1,4 +1,5 @@
 #if 1
+
 #include <WiFi.h>
 #include <WebServer.h>
 #include <WebSocketsServer.h>
@@ -121,6 +122,7 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length
       break;
   }
 }
+
 #if 0
 // 提供Web界面
 void handleRoot() {
@@ -511,7 +513,7 @@ void handleRoot() {
 }
 #endif
 
-#if 0
+#if 1
 void handleRoot() {
   String html = R"rawliteral(
   <!DOCTYPE html>
@@ -992,7 +994,9 @@ void handleRoot() {
 }
 
 #endif
-#if 1
+
+
+#if 0
 void handleRoot() {
   String html = R"rawliteral(
   <!DOCTYPE html>
@@ -1473,6 +1477,8 @@ void handleRoot() {
   server.send(200, "text/html", html);
 }
 #endif
+
+
 void setup() {
 
   pinMode(POWER_PIN,OUTPUT);
