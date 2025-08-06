@@ -26,6 +26,7 @@ struct_message txData;
 void setup() {
   Serial.begin(115200);
   WiFi.mode(WIFI_STA);
+  WiFi.setSleep(false);
   WiFi.disconnect();
   // 初始化ESP-NOW
   if (esp_now_init() != ESP_OK) {
@@ -43,8 +44,6 @@ void setup() {
     Serial.println("添加对等设备失败");
    // return;
   }
-
-  WiFi.setSleep(false);
 
   Serial.print("ESP32 MAC Address: ");
   Serial.println(WiFi.macAddress());

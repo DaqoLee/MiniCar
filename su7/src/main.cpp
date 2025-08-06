@@ -1,11 +1,12 @@
-#if 0
+#if 1
 
 #include <WiFi.h>
 #include <WebServer.h>
 #include <WebSocketsServer.h>
-#include <ESP32PWM.h>
 #include <Servo16.h>
 #include <FastLED.h>
+#include <esp_now.h>
+
 // 引脚定义
 #define MOTOR_A_PWM 6   // 后轮电机PWM1
 #define MOTOR_B_PWM 7   // 后轮电机PWM2
@@ -17,6 +18,9 @@
 #define RGB_PIN 4
 
 #define NUM_LEDS 1
+
+#define IS_REMOTE 1
+
 CRGB leds[NUM_LEDS];
 // WiFi设置
 const char* ssid = "ESP32C3-Car";
@@ -46,6 +50,18 @@ const float minBatteryVoltage = 3.0; // 2S锂电池最低电压(6.0V)
 const float voltageDividerRatio = 2.0; // 分压比 (两个100K电阻分压)
 unsigned long lastBatteryUpdate = 0;
 const long batteryUpdateInterval = 2000; // 每2秒更新一次电池信息
+
+
+
+typedef struct struct_message {
+  int16_t joy1X;
+  int16_t joy1Y;
+  int16_t joy2X;
+  int16_t joy2Y;
+} struct_message;
+struct_message rxData;
+
+
 
 void updateBatteryInfo() {
   // 读取ADC值（0-4095）
@@ -1479,138 +1495,6 @@ void handleRoot() {
 #endif
 
 
-void setup() {
-
-  pinMode(POWER_PIN,OUTPUT);
-  digitalWrite(POWER_PIN, HIGH);
-  Serial.begin(115200);
-  
-  // 设置舵机PWM
-  // ledcSetup(0, 50, 16); // 通道0, 50Hz, 16位分辨率
-  // ledcAttachPin(STEERING_PIN, 0);
-  // ledcWrite(0, servoCenter); // 初始位置居中
-
-	myservo.setPeriodHertz(50);    // standard 50 hz servo
-	myservo.attach(STEERING_PIN, 2, 1000, 2000); // attaches the servo on pin 18 to the servo object
-	myservo.writeMicroseconds(servoCenter); 
-  
-  // 设置电机PWM
-  ledcSetup(0, 5000, 8); // 通道1, 5kHz, 8位分辨率
-  ledcAttachPin(MOTOR_A_PWM, 0);
-  ledcSetup(1, 5000, 8); // 通道2, 5kHz, 8位分辨率
-  ledcAttachPin(MOTOR_B_PWM, 1);
-
-  pinMode(CAR_SLEEP_PIN,OUTPUT);
-  digitalWrite(CAR_SLEEP_PIN, HIGH);
-
-  pinMode(POWER_KEY_PIN, INPUT);
-  
-  analogReadResolution(12); // 12位分辨率 (0-4095)
-  // pinMode(BATTERY_PIN, INPUT);
-  updateBatteryInfo();
-
-  FastLED.addLeds<NEOPIXEL, RGB_PIN>(leds, NUM_LEDS); 
-/*
-    HUE_RED = 0,       ///< Red (0°)
-    HUE_ORANGE = 32,   ///< Orange (45°)
-    HUE_YELLOW = 64,   ///< Yellow (90°)
-    HUE_GREEN = 96,    ///< Green (135°)
-    HUE_AQUA = 128,    ///< Aqua (180°)
-    HUE_BLUE = 160,    ///< Blue (225°)
-    HUE_PURPLE = 192,  ///< Purple (270°)
-    HUE_PINK = 224     ///< Pink (315°)
-*/
-  leds[0] = CHSV(HUE_YELLOW, 255, 30);
-  FastLED.show();
-  // 设置WiFi AP
-  WiFi.softAP(ssid, password);
-  
-  Serial.print("AP IP address: ");
-  Serial.println(WiFi.softAPIP());
-  
-  // 设置服务器路�?
-  server.on("/", handleRoot);
-  
-  // 启动WebSocket服务�?
-  webSocket.begin();
-  webSocket.onEvent(webSocketEvent);
-  
-  // 启动HTTP服务�?
-  server.begin();
-  Serial.println("HTTP and WebSocket servers started");
-
-  xTaskCreate(PowerTask, "PowerTask", 4096, NULL, 1, NULL);
-  
-}
-
-void PowerTask(void *pvParameters)//void *pvParameters
-{
-  static uint16_t count = 0;
-  while (1)
-  {
-     if (!digitalRead(POWER_KEY_PIN))
-    {
-      count++;
-      if (count > 1500)
-      {
-        digitalWrite(POWER_PIN, LOW);
-        leds[0] = CHSV(HUE_YELLOW, 255, 0);
-        FastLED.show();
-      }
-    
-    }
-    else
-    {
-      count = 0;
-    }
-    delay(1);
-
-    unsigned long currentMillis = millis();
-    if (currentMillis - lastBatteryUpdate >= batteryUpdateInterval) {
-      updateBatteryInfo();
-      lastBatteryUpdate = currentMillis;
-    }
-
-  }
-  
-}
-
-void loop() {
-  webSocket.loop();
-  server.handleClient();
-
-
- 
-}
-
-#endif
-
-#include <Arduino.h>
-#include <esp_now.h>
-#include <WiFi.h>
-#include <Servo16.h>
-// #include <ESP32Servo.h>
-const int servoCenter = 1350;
-
-#define MOTOR_PWM_A 6   
-#define MOTOR_PWM_B 7   
-#define STEERING_PIN 3  
-
-
-#define PWM_FREQ 5000
-#define PWM_RES 8       
-
-
-// Servo steeringServo;
-Servo myservo; 
-
-typedef struct struct_message {
-  int16_t joy1X;
-  int16_t joy1Y;
-  int16_t joy2X;
-  int16_t joy2Y;
-} struct_message;
-struct_message rxData;
 
 
 void setMotorSpeed(int speed) {
@@ -1644,32 +1528,49 @@ void onDataRecv(const uint8_t *mac, const uint8_t *data, int len) {
   Serial.println(motorSpeed);
 }
 
+
 void setup() {
 
-  delay(1000);
-  pinMode(10,OUTPUT);
-  digitalWrite(10,HIGH);
+  pinMode(POWER_PIN,OUTPUT);
+  digitalWrite(POWER_PIN, HIGH);
   Serial.begin(115200);
-  WiFi.mode(WIFI_STA);
-  WiFi.setSleep(false);
-  //
-  ledcSetup(0, PWM_FREQ, PWM_RES);  // 
-  ledcSetup(1, PWM_FREQ, PWM_RES);  // 
-  ledcAttachPin(MOTOR_PWM_A, 0);
-  ledcAttachPin(MOTOR_PWM_B, 1);
-
-  pinMode(5,OUTPUT);
-  digitalWrite(5,HIGH);
-
-  myservo.setPeriodHertz(50);    // standard 50 hz servo
+  
+	myservo.setPeriodHertz(50);    // standard 50 hz servo
 	myservo.attach(STEERING_PIN, 2, 1000, 2000); // attaches the servo on pin 18 to the servo object
 	myservo.writeMicroseconds(servoCenter); 
   
+  // 设置电机PWM
+  ledcSetup(0, 5000, 8); // 通道1, 5kHz, 8位分辨率
+  ledcAttachPin(MOTOR_A_PWM, 0);
+  ledcSetup(1, 5000, 8); // 通道2, 5kHz, 8位分辨率
+  ledcAttachPin(MOTOR_B_PWM, 1);
 
-  //
-  // steeringServo.attach(STEERING_PIN);
-  // steeringServo.write(90);  // 
-  //
+  pinMode(CAR_SLEEP_PIN,OUTPUT);
+  digitalWrite(CAR_SLEEP_PIN, HIGH);
+
+  pinMode(POWER_KEY_PIN, INPUT);
+  
+  analogReadResolution(12); // 12位分辨率 (0-4095)
+  // pinMode(BATTERY_PIN, INPUT);
+  updateBatteryInfo();
+
+  FastLED.addLeds<NEOPIXEL, RGB_PIN>(leds, NUM_LEDS); 
+/*
+    HUE_RED = 0,       ///< Red (0°)
+    HUE_ORANGE = 32,   ///< Orange (45°)
+    HUE_YELLOW = 64,   ///< Yellow (90°)
+    HUE_GREEN = 96,    ///< Green (135°)
+    HUE_AQUA = 128,    ///< Aqua (180°)
+    HUE_BLUE = 160,    ///< Blue (225°)
+    HUE_PURPLE = 192,  ///< Purple (270°)
+    HUE_PINK = 224     ///< Pink (315°)
+*/
+  leds[0] = CHSV(HUE_GREEN, 255, 30);
+  FastLED.show();
+
+#if IS_REMOTE
+  WiFi.mode(WIFI_STA);
+  WiFi.setSleep(false);
   if (esp_now_init() != ESP_OK) {
     Serial.println("ESP-NOW");
     return;
@@ -1677,14 +1578,82 @@ void setup() {
 
   Serial.print("ESP32-C3 MAC Address: ");
   Serial.println(WiFi.macAddress());
-
-
   // esp_now_set_self_role(ESP_NOW_ROLE_SLAVE);
   esp_now_register_recv_cb(onDataRecv);
+#else
+
+  // 设置WiFi AP
+  WiFi.softAP(ssid, password);
+  WiFi.setSleep(false);
+  Serial.print("AP IP address: ");
+  Serial.println(WiFi.softAPIP());
+  // 设置服务器路
+  server.on("/", handleRoot);
+  // 启动WebSocket服务
+  webSocket.begin();
+  webSocket.onEvent(webSocketEvent);
+  server.begin();
+  Serial.println("HTTP and WebSocket servers started");
+  // 启动HTTP服务
+ #endif 
+
+  xTaskCreate(PowerTask, "PowerTask", 4096, NULL, 1, NULL);
+  
+}
+
+void PowerTask(void *pvParameters)//void *pvParameters
+{
+  static uint16_t count = 0;
+  while (1)
+  {
+     if (!digitalRead(POWER_KEY_PIN))
+    {
+      count++;
+      if (count > 1500)
+      {
+        digitalWrite(POWER_PIN, LOW);
+        leds[0] = CHSV(HUE_YELLOW, 255, 0);
+        FastLED.show();
+      }
+    
+    }
+    else
+    {
+      count = 0;
+    }
+    delay(1);
+
+    unsigned long currentMillis = millis();
+    if (currentMillis - lastBatteryUpdate >= batteryUpdateInterval) {
+      updateBatteryInfo();
+
+      if (batteryVoltage < 3.5f)
+      {
+         leds[0] = CHSV(HUE_RED, 255, 30);
+         FastLED.show();
+      }
+      else
+      {
+        leds[0] = CHSV(HUE_GREEN, 255, 30);
+        FastLED.show();
+      }
+      
+      lastBatteryUpdate = currentMillis;
+    }
+
+  }
+  
 }
 
 void loop() {
 
-  // Serial.println("ESP32-C3 MAC Address: ");
+#if IS_REMOTE
   delay(100);
+#else
+  webSocket.loop();
+  server.handleClient();
+#endif
+
 }
+
+#endif
