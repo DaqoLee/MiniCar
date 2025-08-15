@@ -105,7 +105,7 @@ void handleOtaRoot() {
   </head>
   <body>
     <div class="container">
-      <h1>ESP32C3 FIRMWARE UPDATE111</h1>
+      <h1>ESP32C3 FIRMWARE UPDATE</h1>
       <p>Upload a new firmware (.bin file) to your device</p>
       
       <div class="upload-container">
