@@ -21,14 +21,36 @@ typedef struct
   
 	lv_obj_t *main;
 	bool main_del;
-	lv_obj_t *main_slider_2;
-	lv_obj_t *main_slider_1;
-	lv_obj_t *main_slider_4;
-	lv_obj_t *main_slider_3;
-	lv_obj_t *main_led_1;
+	lv_obj_t *main_cont_1;
 	lv_obj_t *main_bar_1;
-	lv_obj_t *main_line_1;
-	lv_obj_t *main_line_2;
+	lv_obj_t *main_bar_2;
+	lv_obj_t *main_bar_3;
+	lv_obj_t *main_bar_4;
+	lv_obj_t *main_btn_1;
+	lv_obj_t *main_btn_1_label;
+	lv_obj_t *main_cont_2;
+	lv_obj_t *main_bar_8;
+	lv_obj_t *main_bar_7;
+	lv_obj_t *main_bar_6;
+	lv_obj_t *main_bar_5;
+	lv_obj_t *main_btn_2;
+	lv_obj_t *main_btn_2_label;
+	lv_obj_t *main_cont_3;
+	lv_obj_t *main_label_2;
+	lv_obj_t *main_label_3;
+	lv_obj_t *main_cont_4;
+	lv_obj_t *main_label_5;
+	lv_obj_t *main_label_4;
+	lv_obj_t *main_cont_5;
+	lv_obj_t *main_cont_6;
+	lv_obj_t *main_bar_9;
+	lv_obj_t *main_bar_10;
+	lv_obj_t *main_label_6;
+	lv_obj_t *main_tabview_1;
+	lv_obj_t *main_tabview_1_tab_1;
+	lv_obj_t *main_tabview_1_tab_2;
+	lv_obj_t *main_tabview_1_tab_3;
+	lv_obj_t *main_img_1;
 	lv_obj_t *menu;
 	bool menu_del;
 	lv_obj_t *menu_menu_1;
@@ -47,6 +69,19 @@ typedef struct
 	lv_obj_t *menu_menu_1_label_4;
 	lv_obj_t *calibrate;
 	bool calibrate_del;
+	lv_obj_t *calibrate_cont_1;
+	lv_obj_t *calibrate_label_1;
+	lv_obj_t *calibrate_label_2;
+	lv_obj_t *calibrate_label_5;
+	lv_obj_t *calibrate_label_6;
+	lv_obj_t *calibrate_cont_2;
+	lv_obj_t *calibrate_label_4;
+	lv_obj_t *calibrate_label_3;
+	lv_obj_t *calibrate_label_8;
+	lv_obj_t *calibrate_label_7;
+	lv_obj_t *calibrate_cont_3;
+	lv_obj_t *calibrate_label_9;
+	lv_obj_t *calibrate_label_10;
 }lv_ui;
 
 typedef void (*ui_setup_scr_t)(lv_ui * ui);
@@ -77,9 +112,15 @@ extern lv_ui guider_ui;
 void setup_scr_main(lv_ui *ui);
 void setup_scr_menu(lv_ui *ui);
 void setup_scr_calibrate(lv_ui *ui);
+LV_IMAGE_DECLARE(_wifi_RGB565A8_20x20);
 
+LV_FONT_DECLARE(lv_font_montserratMedium_16)
 LV_FONT_DECLARE(lv_font_montserratMedium_12)
+LV_FONT_DECLARE(lv_font_montserratMedium_24)
+LV_FONT_DECLARE(lv_font_montserratMedium_13)
 LV_FONT_DECLARE(lv_font_montserratMedium_14)
+LV_FONT_DECLARE(lv_font_montserratMedium_34)
+LV_FONT_DECLARE(lv_font_montserratMedium_25)
 
 
 #ifdef __cplusplus
