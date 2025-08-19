@@ -13,6 +13,20 @@
 #include "Free_Fonts.h" // Include the header file attached to this sketch
 #include <lvgl.h>
 
+// 
+#include "events_init.h"
+#include "gui_guider.h"
+#include "custom.h"
+
+#include <esp_now.h>
+#include <WiFi.h>
+#include "esp_wifi.h"
+
+// ??????
+#define JOY1_X 6
+#define JOY1_Y 7
+#define JOY2_X 5
+#define JOY2_Y 1
 
 #define MAX_VALUE 100
 #define MIN_VALUE 0
@@ -28,8 +42,26 @@
 
 TFT_eSPI tft = TFT_eSPI();
 lv_display_t *display;
+lv_ui guider_ui;
+
 
 static lv_color_t buf1[TFT_WIDTH * 10];
+
+
+
+// ???MAC???????????MAC???
+// uint8_t receiverMac[] = {0xDC, 0x06, 0x75, 0xA9, 0x93, 0x20};
+uint8_t receiverMac[] = {0x0C, 0x4E, 0xA0, 0x21, 0x29, 0x3C};
+
+// ??????????????
+typedef struct struct_message {
+  int16_t joy1X;
+  int16_t joy1Y;
+  int16_t joy2X;
+  int16_t joy2Y;
+} struct_message;
+struct_message txData;
+
 
 void my_flush_cb(lv_display_t *disp, const lv_area_t *area, uint8_t *px_map) {
     int32_t w = lv_area_get_width(area);
@@ -123,7 +155,42 @@ static void slider1_event_cb(lv_event_t * e)
     }
 }
 
+void lvgl_user_init(void)
+{
+  lv_init();
+  
+  /*Set the touchscreen calibration data,
+    the actual data for your display can be acquired using
+    the Generic -> Touch_calibrate example from the TFT_eSPI library*/
+  // uint16_t calData[5] = { 275, 3620, 264, 3532, 1 };
+  // tft.setTouch( calData );
+  
+  lv_color_t* buf1 = (lv_color_t*) heap_caps_malloc(240 * 240, MALLOC_CAP_SPIRAM);
+  // lv_color_t* buf2 = (lv_color_t*) heap_caps_malloc(240 * 240, MALLOC_CAP_SPIRAM);
+//   lv_disp_draw_buf_init( &draw_buf, buf1, NULL, 240 * 240);
 
+//   /*Initialize the display*/
+//   static lv_disp_drv_t disp_drv;
+//   lv_disp_drv_init( &disp_drv );
+//   /*Change the following line to your display resolution*/
+//   disp_drv.hor_res = 240;
+//   disp_drv.ver_res = 240;
+//   disp_drv.flush_cb = my_flush_cb;
+//   disp_drv.full_refresh = 1;
+//   disp_drv.draw_buf = &draw_buf;
+//   lv_disp_drv_register(&disp_drv);
+
+//   /*Initialize the (dummy) input device driver*/
+//   static lv_indev_drv_t indev_drv;
+//   lv_indev_drv_init(&indev_drv);
+//   indev_drv.type = LV_INDEV_TYPE_POINTER;
+//   indev_drv.read_cb = my_touchpad_read;
+//   lv_indev_drv_register(&indev_drv);
+
+  setup_ui(&guider_ui);
+  events_init(&guider_ui);
+  custom_init(&guider_ui);
+}
 
 void setup() {
 
@@ -131,6 +198,38 @@ void setup() {
     Serial.begin(115200);
     pinMode(BL, OUTPUT);
     digitalWrite(BL, HIGH);
+
+
+
+      Serial.begin(115200);
+  WiFi.mode(WIFI_STA);
+  WiFi.setSleep(false);
+  WiFi.disconnect();
+  // ???ESP-NOW
+  if (esp_now_init() != ESP_OK) {
+    Serial.println("ESP-NOW?????");
+    return;
+  }
+
+  // ??????
+  esp_now_peer_info_t peerInfo;
+  memcpy(peerInfo.peer_addr, receiverMac, 6);
+  peerInfo.channel = 0;
+  peerInfo.encrypt = false;
+  peerInfo.ifidx = WIFI_IF_STA;
+  if (esp_now_add_peer(&peerInfo) != ESP_OK) {
+    Serial.println("????????");
+   // return;
+  }
+
+  Serial.print("ESP32 MAC Address: ");
+  Serial.println(WiFi.macAddress());
+
+  // ??????
+  pinMode(JOY1_X, INPUT);
+  pinMode(JOY1_Y, INPUT);
+  pinMode(JOY2_X, INPUT);
+  pinMode(JOY2_Y, INPUT);
 
     // pinMode(SPI_CS1, OUTPUT);
     // digitalWrite(SPI_CS1, LOW);
@@ -143,6 +242,10 @@ void setup() {
     tft.begin();
     tft.setRotation(2);
     tft.fillScreen(TFT_BLACK);
+    tft.setSwapBytes(true); 
+
+    pinMode(TFT_CS, OUTPUT);
+    digitalWrite(TFT_CS, HIGH); 
     // tft.setFreeFont(FF18);
     // tft.setSwapBytes(true); // We need to swap the colour bytes (endianess)
 
@@ -166,35 +269,37 @@ void setup() {
     // lv_obj_center(label);
     // lv_obj_set_style_text_font(label, &lv_font_montserrat_14, LV_PART_MAIN | LV_STATE_DEFAULT);
 
-    lv_obj_t * slider;
-    slider = lv_slider_create(lv_screen_active());
-    lv_obj_center(slider);
+//     lv_obj_t * slider;
+//     slider = lv_slider_create(lv_screen_active());
+//     lv_obj_center(slider);
 
-    lv_slider_set_mode(slider, LV_SLIDER_MODE_RANGE);
-    lv_slider_set_range(slider, MIN_VALUE, MAX_VALUE);
-    lv_slider_set_value(slider, 70, LV_ANIM_OFF);
-    lv_slider_set_left_value(slider, 20, LV_ANIM_OFF);
-    lv_obj_set_size(slider, 5, 50);
-   // lv_bar_set_orientation(slider,LV_BAR_ORIENTATION_VERTICAL);
-    lv_obj_add_event_cb(slider, slider_event_cb, LV_EVENT_ALL, NULL);
-    lv_obj_refresh_ext_draw_size(slider);
-
-
-    lv_obj_t * slider1;
-    slider1 = lv_slider_create(lv_screen_active());
-    lv_obj_center(slider1);
-
-    lv_slider_set_mode(slider1, LV_SLIDER_MODE_RANGE);
-    lv_slider_set_range(slider1, MIN_VALUE, MAX_VALUE);
-    lv_slider_set_value(slider1, 70, LV_ANIM_OFF);
-    lv_slider_set_left_value(slider1, 20, LV_ANIM_OFF);
-    lv_obj_set_size(slider1, 100, 10);
-   // lv_bar_set_orientation(slider,LV_BAR_ORIENTATION_VERTICAL);
-    lv_obj_add_event_cb(slider1, slider1_event_cb, LV_EVENT_ALL, NULL);
-    lv_obj_refresh_ext_draw_size(slider1);
+//     lv_slider_set_mode(slider, LV_SLIDER_MODE_RANGE);
+//     lv_slider_set_range(slider, MIN_VALUE, MAX_VALUE);
+//     lv_slider_set_value(slider, 70, LV_ANIM_OFF);
+//     lv_slider_set_left_value(slider, 20, LV_ANIM_OFF);
+//     lv_obj_set_size(slider, 5, 50);
+//    // lv_bar_set_orientation(slider,LV_BAR_ORIENTATION_VERTICAL);
+//     lv_obj_add_event_cb(slider, slider_event_cb, LV_EVENT_ALL, NULL);
+//     lv_obj_refresh_ext_draw_size(slider);
 
 
-    Serial.print("inited");
+//     lv_obj_t * slider1;
+//     slider1 = lv_slider_create(lv_screen_active());
+//     lv_obj_center(slider1);
+
+//     lv_slider_set_mode(slider1, LV_SLIDER_MODE_RANGE);
+//     lv_slider_set_range(slider1, MIN_VALUE, MAX_VALUE);
+//     lv_slider_set_value(slider1, 70, LV_ANIM_OFF);
+//     lv_slider_set_left_value(slider1, 20, LV_ANIM_OFF);
+//     lv_obj_set_size(slider1, 100, 10);
+//    // lv_bar_set_orientation(slider,LV_BAR_ORIENTATION_VERTICAL);
+//     lv_obj_add_event_cb(slider1, slider1_event_cb, LV_EVENT_ALL, NULL);
+//     lv_obj_refresh_ext_draw_size(slider1);
+
+
+//     Serial.print("inited");
+    lvgl_user_init();
+
 
     // xTaskCreatePinnedToCore(CAN_RX_Task, "CAN", 8192, NULL, 1, NULL, 0);
     // xTaskCreate(task,"stepper",4096,NULL,10,NULL);
@@ -213,6 +318,8 @@ void refresh() {
     lv_timer_handler(); // ??LVGL??
     vTaskDelay(5);           // ?????
 }
+
+int value = 0;
 void loop() {
  
 
@@ -221,7 +328,28 @@ void loop() {
     // tft.setTextSize(1);
     // tft.setTextColor(TFT_GREEN, TFT_BLACK);
     // tft.printf("A");
+
+//   txData.joy1Y = analogRead(JOY1_X);
+//   txData.joy2Y = analogRead(JOY1_Y);
+//   txData.joy1X = analogRead(JOY2_X);
+//   txData.joy2X = analogRead(JOY2_Y);
+
+
+//   Serial.printf("X1: %d, Y1: %d, X2: %d, Y2: %d\r\n",txData.joy1X,txData.joy1Y,txData.joy2X,txData.joy2Y );
+
+//   // ????
+//   esp_err_t result = esp_now_send(receiverMac, (uint8_t*)&txData, sizeof(txData));
+  
+//   if (result == ESP_OK) {
+//     Serial.println("");
+//   } else {
+//     Serial.println("");
+//   }
+// delay(10);
+
+// lv_slider_set_value(guider_ui.main_slider_2, value, LV_ANIM_OFF);
 refresh();
+// Serial.println(value);
 
 }
 
