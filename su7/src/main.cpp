@@ -241,9 +241,9 @@ void onDataRecv(const uint8_t *mac, const uint8_t *data, int len) {
   if(currentMode != MODE_JOYSTICK) return;
   
   memcpy(&rxData, data, sizeof(rxData));
-  int servoAngle = map(rxData.joy2Y, 0, 4095, servoMin, servoMax);
+  int servoAngle = map(rxData.joy1Y, 0, 4095, servoMin, servoMax);
   myservo.writeMicroseconds(servoAngle); 
-  int motorSpeed = map(rxData.joy1X, 0, 4095, 255, -255);
+  int motorSpeed = map(rxData.joy2X, 0, 4095, 255, -255);
   setMotorSpeed(motorSpeed);
   
   Serial.print("angle:");

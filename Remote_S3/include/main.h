@@ -4,5 +4,7 @@
 
 
 #define BL 38
+#define PWOR_PIN 17
+
 
 #endif // !_MAIN_H

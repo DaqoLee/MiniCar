@@ -28,6 +28,26 @@
 #define JOY2_X 5
 #define JOY2_Y 1
 
+#define MAX_JOY1_X 3400
+#define MID_JOY1_X 1960
+#define MIN_JOY1_X 630
+
+#define MAX_JOY2_X 3050
+#define MID_JOY2_X 1565
+#define MIN_JOY2_X 100
+
+#define MAX_JOY1_Y 2960
+#define MID_JOY1_Y 1650
+#define MIN_JOY1_Y 350
+
+#define MAX_JOY2_Y 3420
+#define MID_JOY2_Y 2070
+#define MIN_JOY2_Y 680
+
+
+#define JOY_MAX 100
+#define JOY_MINI 0
+
 #define MAX_VALUE 100
 #define MIN_VALUE 0
 
@@ -195,13 +215,17 @@ void lvgl_user_init(void)
 void setup() {
 
 
-    Serial.begin(115200);
-    pinMode(BL, OUTPUT);
-    digitalWrite(BL, HIGH);
+  Serial.begin(115200);
+  delay(200);
+
+  pinMode(PWOR_PIN, OUTPUT);
+  digitalWrite(PWOR_PIN, HIGH);
+  pinMode(BL, OUTPUT);
+  digitalWrite(BL, HIGH);
 
 
 
-      Serial.begin(115200);
+  Serial.begin(115200);
   WiFi.mode(WIFI_STA);
   WiFi.setSleep(false);
   WiFi.disconnect();
@@ -320,6 +344,10 @@ void refresh() {
 }
 
 int value = 0;
+int16_t joy1Y = 0;
+int16_t joy2Y = 0;
+int16_t joy1X = 0;
+int16_t joy2X = 0;
 void loop() {
  
 
@@ -329,23 +357,27 @@ void loop() {
     // tft.setTextColor(TFT_GREEN, TFT_BLACK);
     // tft.printf("A");
 
-//   txData.joy1Y = analogRead(JOY1_X);
-//   txData.joy2Y = analogRead(JOY1_Y);
-//   txData.joy1X = analogRead(JOY2_X);
-//   txData.joy2X = analogRead(JOY2_Y);
+  joy1Y = analogRead(JOY1_Y);
+  joy2Y = analogRead(JOY2_Y);
+  joy1X = analogRead(JOY1_X);
+  joy2X = analogRead(JOY2_X);
 
+  txData.joy1X = map(joy1X, MIN_JOY1_X, MAX_JOY1_X, 0, 4095);
+  txData.joy1Y = map(joy1Y, MIN_JOY1_Y, MAX_JOY1_Y, 0, 4095);
+  txData.joy2X = map(joy2X, MIN_JOY2_X, MAX_JOY2_X, 4095, 0);
+  txData.joy2Y = map(joy2Y, MIN_JOY2_Y, MAX_JOY2_Y, 0, 4095);
 
-//   Serial.printf("X1: %d, Y1: %d, X2: %d, Y2: %d\r\n",txData.joy1X,txData.joy1Y,txData.joy2X,txData.joy2Y );
+  // Serial.printf("X1: %d, Y1: %d, X2: %d, Y2: %d\r\n",txData.joy1X,txData.joy1Y,txData.joy2X,txData.joy2Y );
 
 //   // ????
-//   esp_err_t result = esp_now_send(receiverMac, (uint8_t*)&txData, sizeof(txData));
+  esp_err_t result = esp_now_send(receiverMac, (uint8_t*)&txData, sizeof(txData));
   
-//   if (result == ESP_OK) {
-//     Serial.println("");
-//   } else {
-//     Serial.println("");
-//   }
-// delay(10);
+  // if (result == ESP_OK) {
+  //   Serial.println("");
+  // } else {
+  //   Serial.println("");
+  // }
+ delay(10);
 
 // lv_slider_set_value(guider_ui.main_slider_2, value, LV_ANIM_OFF);
 refresh();
