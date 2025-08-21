@@ -83,6 +83,7 @@ typedef struct struct_message {
 struct_message txData;
 
 
+
 void my_flush_cb(lv_display_t *disp, const lv_area_t *area, uint8_t *px_map) {
     int32_t w = lv_area_get_width(area);
     int32_t h = lv_area_get_height(area);
@@ -175,6 +176,28 @@ static void slider1_event_cb(lv_event_t * e)
     }
 }
 
+void my_touchpad_read( lv_indev_t * indev, lv_indev_data_t * data )
+{
+    /*For example  ("my_..." functions needs to be implemented by you)
+    int32_t x, y;
+    bool touched = my_get_touch( &x, &y );
+
+    if(!touched) {
+        data->state = LV_INDEV_STATE_RELEASED;
+    } else {
+        data->state = LV_INDEV_STATE_PRESSED;
+
+        data->point.x = x;
+        data->point.y = y;
+    }
+     */
+}
+
+/*use Arduinos millis() as tick source*/
+static uint32_t my_tick(void)
+{
+    return millis();
+}
 void lvgl_user_init(void)
 {
   lv_init();
@@ -184,8 +207,20 @@ void lvgl_user_init(void)
     the Generic -> Touch_calibrate example from the TFT_eSPI library*/
   // uint16_t calData[5] = { 275, 3620, 264, 3532, 1 };
   // tft.setTouch( calData );
+
+    lv_init();
+    display = lv_display_create(TFT_WIDTH, TFT_HEIGHT);
+    lv_display_set_flush_cb(display, my_flush_cb);
+    lv_display_set_buffers(display, buf1, nullptr, sizeof(buf1), LV_DISPLAY_RENDER_MODE_PARTIAL);
+
+    lv_indev_t * indev = lv_indev_create();
+    lv_indev_set_type(indev, LV_INDEV_TYPE_POINTER); /*Touchpad should have POINTER type*/
+    lv_indev_set_read_cb(indev, my_touchpad_read);
+    lv_tick_set_cb(my_tick);
+
+    
   
-  lv_color_t* buf1 = (lv_color_t*) heap_caps_malloc(240 * 240, MALLOC_CAP_SPIRAM);
+  // lv_color_t* buf1 = (lv_color_t*) heap_caps_malloc(240 * 240, MALLOC_CAP_SPIRAM);
   // lv_color_t* buf2 = (lv_color_t*) heap_caps_malloc(240 * 240, MALLOC_CAP_SPIRAM);
 //   lv_disp_draw_buf_init( &draw_buf, buf1, NULL, 240 * 240);
 
@@ -211,6 +246,8 @@ void lvgl_user_init(void)
   events_init(&guider_ui);
   custom_init(&guider_ui);
 }
+
+char joy1X_str[5];
 
 void setup() {
 
@@ -279,10 +316,6 @@ void setup() {
     // tft.setTextColor(TFT_GREEN, TFT_BLACK);
     // tft.printf("ABCDEFGH");
 
-    lv_init();
-    display = lv_display_create(TFT_WIDTH, TFT_HEIGHT);
-    lv_display_set_flush_cb(display, my_flush_cb);
-    lv_display_set_buffers(display, buf1, nullptr, sizeof(buf1), LV_DISPLAY_RENDER_MODE_PARTIAL);
 
     // LV_FONT_DECLARE(lv_font_montserrat_14)
 
@@ -325,8 +358,7 @@ void setup() {
     lvgl_user_init();
 
 
-    // xTaskCreatePinnedToCore(CAN_RX_Task, "CAN", 8192, NULL, 1, NULL, 0);
-    // xTaskCreate(task,"stepper",4096,NULL,10,NULL);
+  xTaskCreate(GuiTask,"GuiTask",4096*2 ,NULL,1,NULL);
 
 }
 
@@ -338,16 +370,18 @@ float gyroX;
 float gyroY;
 float gyroZ;
 
-void refresh() {
-    lv_timer_handler(); // ??LVGL??
-    vTaskDelay(5);           // ?????
-}
+// void refresh() {
+//     lv_timer_handler(); // ??LVGL??
+//     vTaskDelay(5);           // ?????
+// }
 
 int value = 0;
 int16_t joy1Y = 0;
 int16_t joy2Y = 0;
 int16_t joy1X = 0;
 int16_t joy2X = 0;
+
+
 void loop() {
  
 
@@ -365,11 +399,11 @@ void loop() {
   txData.joy1X = map(joy1X, MIN_JOY1_X, MAX_JOY1_X, 0, 4095);
   txData.joy1Y = map(joy1Y, MIN_JOY1_Y, MAX_JOY1_Y, 0, 4095);
   txData.joy2X = map(joy2X, MIN_JOY2_X, MAX_JOY2_X, 4095, 0);
-  txData.joy2Y = map(joy2Y, MIN_JOY2_Y, MAX_JOY2_Y, 0, 4095);
+  txData.joy2Y = map(joy2Y, MIN_JOY2_Y, MAX_JOY2_Y, 4095, 0);
 
+ 
   // Serial.printf("X1: %d, Y1: %d, X2: %d, Y2: %d\r\n",txData.joy1X,txData.joy1Y,txData.joy2X,txData.joy2Y );
 
-//   // ????
   esp_err_t result = esp_now_send(receiverMac, (uint8_t*)&txData, sizeof(txData));
   
   // if (result == ESP_OK) {
@@ -377,15 +411,61 @@ void loop() {
   // } else {
   //   Serial.println("");
   // }
+//  lv_event_send();
+//  
  delay(10);
 
 // lv_slider_set_value(guider_ui.main_slider_2, value, LV_ANIM_OFF);
-refresh();
+// refresh();
 // Serial.println(value);
 
 }
 
+// 电源管理任务
+void GuiTask(void *pvParameters) {
+  static int count = 0;
+  while (1) {
+    // lv_bar_set_value(guider_ui.main_bar_2, txData.joy1X/100, LV_ANIM_OFF);
+    // lv_obj_send_event(guider_ui.main_label_14, LV_EVENT_VALUE_CHANGED, &txData.joy1X);
+    //"%d" 里面不能有空格
+    lv_label_set_text_fmt(guider_ui.main_label_14, "%d",  txData.joy1X);
+    lv_label_set_text_fmt(guider_ui.main_label_13, "%d",  txData.joy1Y);
 
+    lv_label_set_text_fmt(guider_ui.main_label_9, "%d",  txData.joy2X);
+    lv_label_set_text_fmt(guider_ui.main_label_10, "%d",  txData.joy2Y);
+
+    count = map(txData.joy1X, MID_JOY1_X, MAX_JOY1_X, 0, 100);
+    lv_bar_set_value(guider_ui.main_bar_2, count, LV_ANIM_OFF);
+
+    count = map(txData.joy1X, MIN_JOY1_X, MID_JOY1_X, 0, -100);
+    lv_bar_set_value(guider_ui.main_bar_3, count, LV_ANIM_OFF);
+
+    count = map(txData.joy1Y, MID_JOY1_Y, MAX_JOY1_Y, 0, 100);
+    lv_bar_set_value(guider_ui.main_bar_1, count, LV_ANIM_OFF);
+
+    count = map(txData.joy1Y, MIN_JOY1_Y, MID_JOY1_Y, 0, -100);
+    lv_bar_set_value(guider_ui.main_bar_4, count, LV_ANIM_OFF);
+//
+    count = map(txData.joy2X, MID_JOY2_X, MAX_JOY2_X, 0, 100);
+    lv_bar_set_value(guider_ui.main_bar_7, count, LV_ANIM_OFF);
+
+    count = map(txData.joy2X, MIN_JOY2_X, MID_JOY2_X, 0, -100);
+    lv_bar_set_value(guider_ui.main_bar_6, count, LV_ANIM_OFF);
+
+    count = map(txData.joy2Y, MID_JOY2_Y, MAX_JOY2_Y, 0, 100);
+    lv_bar_set_value(guider_ui.main_bar_8, count, LV_ANIM_OFF);
+
+    count = map(txData.joy2Y, MIN_JOY2_Y, MID_JOY2_Y, 0, -100);
+    lv_bar_set_value(guider_ui.main_bar_5, count, LV_ANIM_OFF);
+
+
+
+
+    lv_timer_handler();
+    vTaskDelay(5);  
+    
+}
+}
 
 
 #endif

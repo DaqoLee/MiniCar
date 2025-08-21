@@ -221,7 +221,9 @@
 			"width": 240,
 			"height": 240,
 			"visible": true,
-			"flag": [],
+			"flag": [
+				"LV_OBJ_FLAG_EVENT_BUBBLE"
+			],
 			"rm_flag": [],
 			"list": [
 				{
@@ -1110,7 +1112,7 @@
 															"id": "uch8rz0g",
 															"type": "label",
 															"left": 0,
-															"top": 0,
+															"top": -1,
 															"visible": true,
 															"isLock": false,
 															"rm_flag": [],
@@ -1207,7 +1209,29 @@
 																	"shadow_ofs_x": 0,
 																	"shadow_ofs_y": 0
 																}
-															]
+															],
+															"event": {
+																"widget": {
+																	"value_changed": {
+																		"condition": [],
+																		"action": [
+																			{
+																				"dst": "custom_code",
+																				"bindCondi": "",
+																				"actionList": {
+																					"custom_code": {
+																						"inc_c": "int lab14_value = 1;",
+																						"code_c": "lv_obj_t *obj = lv_event_get_target(e);\r\nint16_t *user_value = (int16_t*)lv_event_get_user_data(e);\r\nif((LV_EVENT_VALUE_CHANGED == code) )\r\n{\r\n    lv_label_set_text_fmt(obj, \"%d\", *user_value);\r\n}",
+																						"inc_py": "",
+																						"code_py": ""
+																					}
+																				}
+																			}
+																		]
+																	}
+																}
+															},
+															"layerName": "main"
 														}
 													],
 													"style": [
@@ -1314,58 +1338,68 @@
 											"height": 30,
 											"default_style": false,
 											"scrollbar_mode": "OFF",
+											"items": [
+												{
+													"type": "symbol",
+													"img_path": "",
+													"img_width": 20,
+													"img_height": 20,
+													"img_symbol": "LV_SYMBOL_BATTERY_3",
+													"text": "save"
+												}
+											],
 											"style": [
 												{
 													"part": "LV_PART_MAIN",
 													"state": "LV_STATE_DEFAULT",
 													"object": "main",
 													"disable": false,
+													"padding_top": 5,
+													"padding_left": 5,
+													"padding_right": 5,
+													"padding_bottom": 5,
 													"bg_color": "#ffffff",
 													"bg_grad_color": "#ffffff",
-													"bg_opa": 255,
 													"bg_grad_dir": "LV_GRAD_DIR_NONE",
 													"bg_main_stop": 0,
 													"bg_grad_stop": 255,
+													"bg_opa": 255,
+													"border_color": "#e1e6ee",
+													"border_side": [
+														"LV_BORDER_SIDE_FULL"
+													],
+													"border_width": 1,
+													"border_opa": 255,
 													"radius": 3,
 													"shadow_color": "#2195f6",
 													"shadow_opa": 255,
 													"shadow_width": 0,
 													"shadow_spread": 0,
 													"shadow_ofs_x": 0,
-													"shadow_ofs_y": 0,
-													"padding_top": 5,
-													"padding_left": 5,
-													"padding_right": 5,
-													"padding_bottom": 5,
-													"border_color": "#e1e6ee",
-													"border_side": [
-														"LV_BORDER_SIDE_FULL"
-													],
-													"border_width": 1,
-													"border_opa": 255
+													"shadow_ofs_y": 0
 												},
 												{
 													"part": "LV_PART_MAIN",
 													"state": "LV_STATE_FOCUSED",
 													"object": "main",
 													"disable": true,
-													"border_width": 1,
-													"border_opa": 255,
-													"radius": 3,
-													"border_side": [
-														"LV_BORDER_SIDE_FULL"
-													],
-													"border_color": "#e1e6ee",
-													"bg_color": "#ffffff",
-													"bg_grad_color": "#ffffff",
-													"bg_opa": 255,
-													"bg_grad_dir": "LV_GRAD_DIR_NONE",
-													"bg_main_stop": 0,
-													"bg_grad_stop": 255,
 													"padding_top": 5,
 													"padding_left": 5,
 													"padding_right": 5,
 													"padding_bottom": 5,
+													"bg_color": "#ffffff",
+													"bg_grad_color": "#ffffff",
+													"bg_grad_dir": "LV_GRAD_DIR_NONE",
+													"bg_main_stop": 0,
+													"bg_grad_stop": 255,
+													"bg_opa": 255,
+													"border_color": "#e1e6ee",
+													"border_side": [
+														"LV_BORDER_SIDE_FULL"
+													],
+													"border_width": 1,
+													"border_opa": 255,
+													"radius": 3,
 													"shadow_color": "#2195f6",
 													"shadow_opa": 255,
 													"shadow_width": 0,
@@ -1379,9 +1413,9 @@
 													"object": "main",
 													"disable": true,
 													"padding_top": 5,
-													"padding_bottom": 5,
 													"padding_left": 5,
 													"padding_right": 5,
+													"padding_bottom": 5,
 													"bg_color": "#ffffff",
 													"bg_grad_color": "#ffffff",
 													"bg_grad_dir": "LV_GRAD_DIR_NONE",
@@ -1407,25 +1441,21 @@
 													"state": "LV_STATE_DEFAULT",
 													"object": "main",
 													"disable": false,
-													"radius": 3,
 													"bg_color": "#ffffff",
+													"radius": 3,
 													"bg_opa": 255
 												},
 												{
 													"part": "LV_BTN_PART_MAIN",
 													"state": "LV_STATE_DEFAULT",
+													"desc": "Button",
 													"object": "extra_btns",
 													"disable": false,
-													"text_color": "#0D3055",
-													"font_family": "montserratMedium",
-													"font": 12,
 													"bg_color": "#ffffff",
 													"bg_grad_color": "#ffffff",
-													"bg_opa": 255,
 													"bg_grad_dir": "LV_GRAD_DIR_NONE",
 													"bg_main_stop": 0,
 													"bg_grad_stop": 255,
-													"desc": "Button",
 													"padding_top": 5,
 													"padding_left": 5,
 													"padding_right": 5,
@@ -1436,7 +1466,11 @@
 													],
 													"border_width": 0,
 													"border_opa": 255,
-													"radius": 3
+													"text_color": "#0D3055",
+													"font": 12,
+													"font_family": "montserratMedium",
+													"radius": 3,
+													"bg_opa": 255
 												},
 												{
 													"part": "LV_BTN_PART_MAIN",
@@ -1519,16 +1553,6 @@
 													"radius": 3,
 													"transform_width": 0,
 													"bg_opa": 255
-												}
-											],
-											"items": [
-												{
-													"type": "symbol",
-													"img_path": "",
-													"img_width": 20,
-													"img_height": 20,
-													"img_symbol": "LV_SYMBOL_BATTERY_3",
-													"text": "save"
 												}
 											]
 										}
@@ -2707,7 +2731,7 @@
 							"bar_value": 0,
 							"bar_start_value": 30,
 							"range_s": 0,
-							"range_e": 100,
+							"range_e": -100,
 							"anim": false,
 							"mode": "LV_BAR_MODE_NORMAL",
 							"attribute_type": "freemaster",
@@ -2766,7 +2790,7 @@
 							"left": 57,
 							"top": 65,
 							"visible": true,
-							"isLock": false,
+							"isLock": 0,
 							"rm_flag": [],
 							"flag": [],
 							"width": 6,
@@ -2776,7 +2800,7 @@
 							"bar_value": 0,
 							"bar_start_value": 30,
 							"range_s": 0,
-							"range_e": 100,
+							"range_e": -100,
 							"anim": false,
 							"mode": "LV_BAR_MODE_NORMAL",
 							"attribute_type": "freemaster",
@@ -2835,7 +2859,7 @@
 							"left": 57,
 							"top": 5,
 							"visible": true,
-							"isLock": false,
+							"isLock": 0,
 							"rm_flag": [],
 							"flag": [],
 							"width": 6,
@@ -3012,7 +3036,7 @@
 					"left": 0,
 					"top": 120,
 					"visible": true,
-					"isLock": false,
+					"isLock": 1,
 					"rm_flag": [],
 					"flag": [],
 					"width": 120,
@@ -3027,7 +3051,7 @@
 							"left": 45,
 							"top": 45,
 							"visible": true,
-							"isLock": false,
+							"isLock": 1,
 							"rm_flag": [],
 							"flag": [],
 							"width": 30,
@@ -3213,7 +3237,21 @@
 									"text_opa": 255,
 									"text_color": "#000000"
 								}
-							]
+							],
+							"event": {
+								"widget": {
+									"clicked": {
+										"condition": [],
+										"action": [
+											{
+												"dst": "uch8rz0g",
+												"bindCondi": "",
+												"actionList": {}
+											}
+										]
+									}
+								}
+							}
 						},
 						{
 							"name": "bar_4",
@@ -3232,7 +3270,7 @@
 							"bar_value": 0,
 							"bar_start_value": 30,
 							"range_s": 0,
-							"range_e": 100,
+							"range_e": -100,
 							"anim": false,
 							"mode": "LV_BAR_MODE_NORMAL",
 							"attribute_type": "freemaster",
@@ -3291,17 +3329,17 @@
 							"left": 57,
 							"top": 65,
 							"visible": true,
-							"isLock": false,
+							"isLock": 0,
 							"rm_flag": [],
 							"flag": [],
 							"width": 6,
 							"height": 50,
 							"default_style": false,
 							"animtime": 1000,
-							"bar_value": 0,
+							"bar_value": 1,
 							"bar_start_value": 30,
 							"range_s": 0,
-							"range_e": 100,
+							"range_e": -100,
 							"anim": false,
 							"mode": "LV_BAR_MODE_NORMAL",
 							"attribute_type": "freemaster",
@@ -3436,7 +3474,7 @@
 							"height": 6,
 							"default_style": false,
 							"animtime": 1000,
-							"bar_value": 0,
+							"bar_value": 50,
 							"bar_start_value": 30,
 							"range_s": 0,
 							"range_e": 100,
@@ -3531,7 +3569,20 @@
 					]
 				}
 			],
-			"event": {},
+			"event": {
+				"widget": {
+					"value_changed": {
+						"condition": [],
+						"action": [
+							{
+								"dst": "uch8rz0g",
+								"bindCondi": "",
+								"actionList": {}
+							}
+						]
+					}
+				}
+			},
 			"style": [
 				{
 					"part": "LV_PART_MAIN",
@@ -3590,9 +3641,25 @@
 				"width": 240,
 				"height": 240,
 				"visible": true,
-				"flag": [],
+				"flag": [
+					"LV_OBJ_FLAG_EVENT_BUBBLE"
+				],
 				"rm_flag": [],
-				"event": {},
+				"event": {
+					"widget": {
+						"value_changed": {
+							"condition": [],
+							"action": [
+								{
+									"dst": "main_label_14",
+									"bindCondi": "",
+									"actionList": {},
+									"dst_type": "label"
+								}
+							]
+						}
+					}
+				},
 				"style": [
 					{
 						"part": "LV_PART_MAIN",
@@ -3663,7 +3730,7 @@
 								"animtime": 1000,
 								"animValue": [
 									{
-										"bar_value": 0,
+										"bar_value": 50,
 										"anim": "LV_ANIM_OFF"
 									}
 								],
@@ -3813,13 +3880,13 @@
 								"mode": "LV_BAR_MODE_NORMAL",
 								"range": [
 									0,
-									100
+									-100
 								],
 								"bar_start_value": 30,
 								"animtime": 1000,
 								"animValue": [
 									{
-										"bar_value": 0,
+										"bar_value": 1,
 										"anim": "LV_ANIM_OFF"
 									}
 								],
@@ -3891,7 +3958,7 @@
 								"mode": "LV_BAR_MODE_NORMAL",
 								"range": [
 									0,
-									100
+									-100
 								],
 								"bar_start_value": 30,
 								"animtime": 1000,
@@ -3964,6 +4031,21 @@
 									30
 								],
 								"default_style": false,
+								"event": {
+									"widget": {
+										"clicked": {
+											"condition": [],
+											"action": [
+												{
+													"dst": "main_label_14",
+													"bindCondi": "",
+													"actionList": {},
+													"dst_type": "label"
+												}
+											]
+										}
+									}
+								},
 								"text_align": "center",
 								"style": [
 									{
@@ -4381,7 +4463,7 @@
 								"mode": "LV_BAR_MODE_NORMAL",
 								"range": [
 									0,
-									100
+									-100
 								],
 								"bar_start_value": 30,
 								"animtime": 1000,
@@ -4459,7 +4541,7 @@
 								"mode": "LV_BAR_MODE_NORMAL",
 								"range": [
 									0,
-									100
+									-100
 								],
 								"bar_start_value": 30,
 								"animtime": 1000,
@@ -5702,7 +5784,7 @@
 																"rm_flag": [],
 																"pos": [
 																	0,
-																	0
+																	-1
 																],
 																"size": [
 																	100,
@@ -5711,6 +5793,27 @@
 																"default_style": false,
 																"attribute_type": "",
 																"custom_attribute": [],
+																"event": {
+																	"widget": {
+																		"value_changed": {
+																			"condition": [],
+																			"action": [
+																				{
+																					"dst": "custom_code",
+																					"bindCondi": "",
+																					"actionList": {
+																						"custom_code": {
+																							"inc_c": "int lab14_value = 1;",
+																							"code_c": "lv_obj_t *obj = lv_event_get_target(e);\r\nint16_t *user_value = (int16_t*)lv_event_get_user_data(e);\r\nif((LV_EVENT_VALUE_CHANGED == code) )\r\n{\r\n    lv_label_set_text_fmt(obj, \"%d\", *user_value);\r\n}",
+																							"inc_py": "",
+																							"code_py": ""
+																						}
+																					}
+																				}
+																			]
+																		}
+																	}
+																},
 																"text": "-100",
 																"long_mode": "LV_LABEL_LONG_WRAP",
 																"style": [
@@ -6738,52 +6841,52 @@
 														"state": "LV_STATE_DEFAULT",
 														"object": "main",
 														"disable": false,
+														"padding_top": 5,
+														"padding_left": 5,
+														"padding_right": 5,
+														"padding_bottom": 5,
 														"bg_color": "#ffffff",
 														"bg_grad_color": "#ffffff",
-														"bg_opa": 255,
 														"bg_grad_dir": "LV_GRAD_DIR_NONE",
 														"bg_main_stop": 0,
 														"bg_grad_stop": 255,
+														"bg_opa": 255,
+														"border_color": "#e1e6ee",
+														"border_side": [
+															"LV_BORDER_SIDE_FULL"
+														],
+														"border_width": 1,
+														"border_opa": 255,
 														"radius": 3,
 														"shadow_color": "#2195f6",
 														"shadow_opa": 255,
 														"shadow_width": 0,
 														"shadow_spread": 0,
 														"shadow_ofs_x": 0,
-														"shadow_ofs_y": 0,
-														"padding_top": 5,
-														"padding_left": 5,
-														"padding_right": 5,
-														"padding_bottom": 5,
-														"border_color": "#e1e6ee",
-														"border_side": [
-															"LV_BORDER_SIDE_FULL"
-														],
-														"border_width": 1,
-														"border_opa": 255
+														"shadow_ofs_y": 0
 													},
 													{
 														"part": "LV_PART_MAIN",
 														"state": "LV_STATE_FOCUSED",
 														"object": "main",
 														"disable": true,
-														"border_width": 1,
-														"border_opa": 255,
-														"radius": 3,
-														"border_side": [
-															"LV_BORDER_SIDE_FULL"
-														],
-														"border_color": "#e1e6ee",
-														"bg_color": "#ffffff",
-														"bg_grad_color": "#ffffff",
-														"bg_opa": 255,
-														"bg_grad_dir": "LV_GRAD_DIR_NONE",
-														"bg_main_stop": 0,
-														"bg_grad_stop": 255,
 														"padding_top": 5,
 														"padding_left": 5,
 														"padding_right": 5,
 														"padding_bottom": 5,
+														"bg_color": "#ffffff",
+														"bg_grad_color": "#ffffff",
+														"bg_grad_dir": "LV_GRAD_DIR_NONE",
+														"bg_main_stop": 0,
+														"bg_grad_stop": 255,
+														"bg_opa": 255,
+														"border_color": "#e1e6ee",
+														"border_side": [
+															"LV_BORDER_SIDE_FULL"
+														],
+														"border_width": 1,
+														"border_opa": 255,
+														"radius": 3,
 														"shadow_color": "#2195f6",
 														"shadow_opa": 255,
 														"shadow_width": 0,
@@ -6797,9 +6900,9 @@
 														"object": "main",
 														"disable": true,
 														"padding_top": 5,
-														"padding_bottom": 5,
 														"padding_left": 5,
 														"padding_right": 5,
+														"padding_bottom": 5,
 														"bg_color": "#ffffff",
 														"bg_grad_color": "#ffffff",
 														"bg_grad_dir": "LV_GRAD_DIR_NONE",
@@ -6825,25 +6928,21 @@
 														"state": "LV_STATE_DEFAULT",
 														"object": "main",
 														"disable": false,
-														"radius": 3,
 														"bg_color": "#ffffff",
+														"radius": 3,
 														"bg_opa": 255
 													},
 													{
 														"part": "LV_PART_MAIN",
 														"state": "LV_STATE_DEFAULT",
+														"desc": "Button",
 														"object": "extra_btns",
 														"disable": false,
-														"text_color": "#0D3055",
-														"font_family": "montserratMedium",
-														"font": 12,
 														"bg_color": "#ffffff",
 														"bg_grad_color": "#ffffff",
-														"bg_opa": 255,
 														"bg_grad_dir": "LV_GRAD_DIR_NONE",
 														"bg_main_stop": 0,
 														"bg_grad_stop": 255,
-														"desc": "Button",
 														"padding_top": 5,
 														"padding_left": 5,
 														"padding_right": 5,
@@ -6854,7 +6953,11 @@
 														],
 														"border_width": 0,
 														"border_opa": 255,
-														"radius": 3
+														"text_color": "#0D3055",
+														"font": 12,
+														"font_family": "montserratMedium",
+														"radius": 3,
+														"bg_opa": 255
 													},
 													{
 														"part": "LV_PART_MAIN",
