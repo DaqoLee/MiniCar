@@ -173,7 +173,7 @@ void initMobileMode() {
 
 // 模式切换函数
 void switchMode(OperationMode newMode) {
- // if(currentMode == newMode) return;
+ if(currentMode == newMode) return;
   
   Serial.print("Switching to mode: ");
   switch(newMode) {
@@ -496,6 +496,12 @@ void setup() {
   /*判断按键是否一直按下*/
 
   //isPress()
+    /* LED初始化 */
+  FastLED.addLeds<NEOPIXEL, RGB_PIN>(leds, NUM_LEDS); 
+
+  leds[0] = CHSV(HUE_GREEN, 255, 30);
+  FastLED.show();
+
   isPair();
 
   /*如果按键一直按下超过7s，进入配对模式*/
@@ -525,15 +531,31 @@ void setup() {
   analogReadResolution(12);
   updateBatteryInfo();
 
-
-  /* LED初始化 */
-  FastLED.addLeds<NEOPIXEL, RGB_PIN>(leds, NUM_LEDS); 
-  leds[0] = CHSV(HUE_BLUE, 255, ledBrightness[currentMode]);
-  FastLED.show();
-
   /* 初始模式 */
-  switchMode(currentMode);
-  
+  switch(currentMode) {
+    case MODE_MOBILE: 
+      Serial.println("Mobile"); 
+      leds[0] =CHSV(HUE_BLUE, 255, 30);
+      setMotorSpeed(0);
+      initMobileMode(); 
+      break;
+    case MODE_JOYSTICK:
+      Serial.println("Joystick"); 
+      leds[0] =CHSV(HUE_GREEN, 255, 30);
+      initJoystickMode(); 
+      break;
+    case MODE_OTA:
+      Serial.println("OTA");
+      leds[0] =CHSV(HUE_RED, 255, 30);
+      initOtaMode();
+      break;
+    case MODE_PAIR: 
+      Serial.println("Pair");
+      leds[0] =CHSV(HUE_PURPLE, 255, 30);
+      initJoystickMode(); 
+      break;
+  }
+  FastLED.show();
   // 创建电源管理任务
   xTaskCreate(PowerTask, "PowerTask", 4096, NULL, 1, NULL);
 }
