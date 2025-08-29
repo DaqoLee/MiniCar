@@ -626,6 +626,8 @@ void setup() {
   */
   listPairedDevices();
 
+  //  savePairedDevices();
+
   // currentMode = MODE_PAIR;
   // loadPairedDevices();
  
