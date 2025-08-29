@@ -200,7 +200,7 @@ void setup_scr_main(lv_ui *ui)
 
     //Write style for main_bar_8, Part: LV_PART_INDICATOR, State: LV_STATE_DEFAULT.
     lv_obj_set_style_bg_opa(ui->main_bar_8, 255, LV_PART_INDICATOR|LV_STATE_DEFAULT);
-    lv_obj_set_style_bg_color(ui->main_bar_8, lv_color_hex(0x2195f6), LV_PART_INDICATOR|LV_STATE_DEFAULT);
+    lv_obj_set_style_bg_color(ui->main_bar_8, lv_color_hex(0xff5b74), LV_PART_INDICATOR|LV_STATE_DEFAULT);
     lv_obj_set_style_bg_grad_dir(ui->main_bar_8, LV_GRAD_DIR_NONE, LV_PART_INDICATOR|LV_STATE_DEFAULT);
     lv_obj_set_style_radius(ui->main_bar_8, 10, LV_PART_INDICATOR|LV_STATE_DEFAULT);
 
@@ -222,7 +222,7 @@ void setup_scr_main(lv_ui *ui)
 
     //Write style for main_bar_7, Part: LV_PART_INDICATOR, State: LV_STATE_DEFAULT.
     lv_obj_set_style_bg_opa(ui->main_bar_7, 255, LV_PART_INDICATOR|LV_STATE_DEFAULT);
-    lv_obj_set_style_bg_color(ui->main_bar_7, lv_color_hex(0x2195f6), LV_PART_INDICATOR|LV_STATE_DEFAULT);
+    lv_obj_set_style_bg_color(ui->main_bar_7, lv_color_hex(0xff5b74), LV_PART_INDICATOR|LV_STATE_DEFAULT);
     lv_obj_set_style_bg_grad_dir(ui->main_bar_7, LV_GRAD_DIR_NONE, LV_PART_INDICATOR|LV_STATE_DEFAULT);
     lv_obj_set_style_radius(ui->main_bar_7, 10, LV_PART_INDICATOR|LV_STATE_DEFAULT);
 
@@ -244,7 +244,7 @@ void setup_scr_main(lv_ui *ui)
 
     //Write style for main_bar_6, Part: LV_PART_INDICATOR, State: LV_STATE_DEFAULT.
     lv_obj_set_style_bg_opa(ui->main_bar_6, 255, LV_PART_INDICATOR|LV_STATE_DEFAULT);
-    lv_obj_set_style_bg_color(ui->main_bar_6, lv_color_hex(0x2195f6), LV_PART_INDICATOR|LV_STATE_DEFAULT);
+    lv_obj_set_style_bg_color(ui->main_bar_6, lv_color_hex(0xff5b74), LV_PART_INDICATOR|LV_STATE_DEFAULT);
     lv_obj_set_style_bg_grad_dir(ui->main_bar_6, LV_GRAD_DIR_NONE, LV_PART_INDICATOR|LV_STATE_DEFAULT);
     lv_obj_set_style_radius(ui->main_bar_6, 10, LV_PART_INDICATOR|LV_STATE_DEFAULT);
 
@@ -266,7 +266,7 @@ void setup_scr_main(lv_ui *ui)
 
     //Write style for main_bar_5, Part: LV_PART_INDICATOR, State: LV_STATE_DEFAULT.
     lv_obj_set_style_bg_opa(ui->main_bar_5, 255, LV_PART_INDICATOR|LV_STATE_DEFAULT);
-    lv_obj_set_style_bg_color(ui->main_bar_5, lv_color_hex(0x2195f6), LV_PART_INDICATOR|LV_STATE_DEFAULT);
+    lv_obj_set_style_bg_color(ui->main_bar_5, lv_color_hex(0xff5b74), LV_PART_INDICATOR|LV_STATE_DEFAULT);
     lv_obj_set_style_bg_grad_dir(ui->main_bar_5, LV_GRAD_DIR_NONE, LV_PART_INDICATOR|LV_STATE_DEFAULT);
     lv_obj_set_style_radius(ui->main_bar_5, 10, LV_PART_INDICATOR|LV_STATE_DEFAULT);
 
@@ -484,14 +484,14 @@ void setup_scr_main(lv_ui *ui)
     lv_obj_set_style_bg_opa(ui->main_bar_9, 60, LV_PART_MAIN|LV_STATE_DEFAULT);
     lv_obj_set_style_bg_color(ui->main_bar_9, lv_color_hex(0x2195f6), LV_PART_MAIN|LV_STATE_DEFAULT);
     lv_obj_set_style_bg_grad_dir(ui->main_bar_9, LV_GRAD_DIR_NONE, LV_PART_MAIN|LV_STATE_DEFAULT);
-    lv_obj_set_style_radius(ui->main_bar_9, 10, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_radius(ui->main_bar_9, 1, LV_PART_MAIN|LV_STATE_DEFAULT);
     lv_obj_set_style_shadow_width(ui->main_bar_9, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
 
     //Write style for main_bar_9, Part: LV_PART_INDICATOR, State: LV_STATE_DEFAULT.
     lv_obj_set_style_bg_opa(ui->main_bar_9, 255, LV_PART_INDICATOR|LV_STATE_DEFAULT);
     lv_obj_set_style_bg_color(ui->main_bar_9, lv_color_hex(0x2195f6), LV_PART_INDICATOR|LV_STATE_DEFAULT);
     lv_obj_set_style_bg_grad_dir(ui->main_bar_9, LV_GRAD_DIR_NONE, LV_PART_INDICATOR|LV_STATE_DEFAULT);
-    lv_obj_set_style_radius(ui->main_bar_9, 10, LV_PART_INDICATOR|LV_STATE_DEFAULT);
+    lv_obj_set_style_radius(ui->main_bar_9, 1, LV_PART_INDICATOR|LV_STATE_DEFAULT);
 
     //Write codes main_bar_10
     ui->main_bar_10 = lv_bar_create(ui->main_cont_6);
@@ -506,14 +506,14 @@ void setup_scr_main(lv_ui *ui)
     lv_obj_set_style_bg_opa(ui->main_bar_10, 60, LV_PART_MAIN|LV_STATE_DEFAULT);
     lv_obj_set_style_bg_color(ui->main_bar_10, lv_color_hex(0x2195f6), LV_PART_MAIN|LV_STATE_DEFAULT);
     lv_obj_set_style_bg_grad_dir(ui->main_bar_10, LV_GRAD_DIR_NONE, LV_PART_MAIN|LV_STATE_DEFAULT);
-    lv_obj_set_style_radius(ui->main_bar_10, 10, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_radius(ui->main_bar_10, 1, LV_PART_MAIN|LV_STATE_DEFAULT);
     lv_obj_set_style_shadow_width(ui->main_bar_10, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
 
     //Write style for main_bar_10, Part: LV_PART_INDICATOR, State: LV_STATE_DEFAULT.
     lv_obj_set_style_bg_opa(ui->main_bar_10, 255, LV_PART_INDICATOR|LV_STATE_DEFAULT);
     lv_obj_set_style_bg_color(ui->main_bar_10, lv_color_hex(0x2195f6), LV_PART_INDICATOR|LV_STATE_DEFAULT);
     lv_obj_set_style_bg_grad_dir(ui->main_bar_10, LV_GRAD_DIR_NONE, LV_PART_INDICATOR|LV_STATE_DEFAULT);
-    lv_obj_set_style_radius(ui->main_bar_10, 10, LV_PART_INDICATOR|LV_STATE_DEFAULT);
+    lv_obj_set_style_radius(ui->main_bar_10, 1, LV_PART_INDICATOR|LV_STATE_DEFAULT);
 
     //Write codes main_label_6
     ui->main_label_6 = lv_label_create(ui->main_cont_6);
@@ -942,17 +942,17 @@ void setup_scr_main(lv_ui *ui)
     lv_style_set_bg_grad_dir(&style_main_list_1_extra_texts_main_default, LV_GRAD_DIR_NONE);
 
     //Write codes main_img_1
-    ui->main_img_1 = lv_image_create(ui->main);
-    lv_obj_set_pos(ui->main_img_1, 170, 0);
-    lv_obj_set_size(ui->main_img_1, 20, 20);
-    lv_obj_add_flag(ui->main_img_1, LV_OBJ_FLAG_CLICKABLE);
-    lv_image_set_src(ui->main_img_1, &_wifi_RGB565A8_20x20);
-    lv_image_set_pivot(ui->main_img_1, 50,50);
-    lv_image_set_rotation(ui->main_img_1, 0);
+    // ui->main_img_1 = lv_image_create(ui->main);
+    // lv_obj_set_pos(ui->main_img_1, 170, 0);
+    // lv_obj_set_size(ui->main_img_1, 20, 20);
+    // lv_obj_add_flag(ui->main_img_1, LV_OBJ_FLAG_CLICKABLE);
+    // lv_image_set_src(ui->main_img_1, &_wifi_RGB565A8_20x20);
+    // lv_image_set_pivot(ui->main_img_1, 50,50);
+    // lv_image_set_rotation(ui->main_img_1, 0);
 
-    //Write style for main_img_1, Part: LV_PART_MAIN, State: LV_STATE_DEFAULT.
-    lv_obj_set_style_image_recolor_opa(ui->main_img_1, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
-    lv_obj_set_style_image_opa(ui->main_img_1, 255, LV_PART_MAIN|LV_STATE_DEFAULT);
+    // //Write style for main_img_1, Part: LV_PART_MAIN, State: LV_STATE_DEFAULT.
+    // lv_obj_set_style_image_recolor_opa(ui->main_img_1, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+    // lv_obj_set_style_image_opa(ui->main_img_1, 255, LV_PART_MAIN|LV_STATE_DEFAULT);
 
     //The custom code of main.
 

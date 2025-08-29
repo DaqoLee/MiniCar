@@ -21,8 +21,12 @@
 #include <esp_now.h>
 #include <WiFi.h>
 #include "esp_wifi.h"
+#include <FastLED.h>
+#include <Preferences.h>
 
-// ??????
+#define NUM_LEDS 1
+CRGB leds[NUM_LEDS];
+// 
 #define JOY1_X 6
 #define JOY1_Y 7
 #define JOY2_X 5
@@ -51,6 +55,10 @@
 #define MAX_VALUE 100
 #define MIN_VALUE 0
 
+
+// 定义最大设备数量
+#define MAX_DEVICES 10
+
 // void CAN_RX_Task(void *pvParameters);//void *pvParameters
 
 // void task(void*p){
@@ -59,6 +67,42 @@
 //       vTaskDelay(1500);
 //     }
 // }
+Preferences preferences;
+// 模式定义
+enum OperationMode {
+  MODE_JOYSTICK,  // 摇杆控制模式
+  MODE_OTA,        // OTA更新模式
+  MODE_PAIR
+};
+
+volatile OperationMode currentMode = MODE_JOYSTICK;
+
+typedef struct struct_pair {
+  char type[16];    // 消息类型
+  uint8_t data[32]; // 数据载荷
+  int data_len;     // 数据长度
+} struct_pair;
+
+
+// 存储配对信息的数据结构
+typedef struct {
+  uint8_t mac[6];
+  char name[32];
+  unsigned long lastSeen;
+} device_info_t;
+
+device_info_t pairedDevices[MAX_DEVICES];
+
+uint8_t pairedCount = 0;
+uint8_t pairIndex = 0;
+bool isPaired = false;
+
+typedef struct struct_ack {
+  uint8_t mode; // 确认的消息ID
+  uint8_t battery;
+} struct_ack;
+
+struct_ack ackData;
 
 TFT_eSPI tft = TFT_eSPI();
 lv_display_t *display;
@@ -66,14 +110,17 @@ lv_ui guider_ui;
 
 
 static lv_color_t buf1[TFT_WIDTH * 10];
+lv_indev_t * indev_keypad;
+lv_group_t * group ;
+void keypad_init();
+static void keypad_read(lv_indev_t * indev_drv, lv_indev_data_t * data);
 
-
-
-// ???MAC???????????MAC???
 // uint8_t receiverMac[] = {0xDC, 0x06, 0x75, 0xA9, 0x93, 0x20};
 uint8_t receiverMac[] = {0x0C, 0x4E, 0xA0, 0x21, 0x29, 0x3C};
 
-// ??????????????
+char joy1X_str[5];
+
+
 typedef struct struct_message {
   int16_t joy1X;
   int16_t joy1Y;
@@ -81,6 +128,15 @@ typedef struct struct_message {
   int16_t joy2Y;
 } struct_message;
 struct_message txData;
+
+// 电池参数
+float batteryVoltage = 0.0;
+float batteryPercentage = 0.0;
+const float maxBatteryVoltage = 4.2;
+const float minBatteryVoltage = 3.0;
+const float voltageDividerRatio = 2.0;
+unsigned long lastBatteryUpdate = 0;
+const long batteryUpdateInterval = 2000;
 
 
 
@@ -208,20 +264,65 @@ void lvgl_user_init(void)
   // uint16_t calData[5] = { 275, 3620, 264, 3532, 1 };
   // tft.setTouch( calData );
 
-    lv_init();
-    display = lv_display_create(TFT_WIDTH, TFT_HEIGHT);
-    lv_display_set_flush_cb(display, my_flush_cb);
-    lv_display_set_buffers(display, buf1, nullptr, sizeof(buf1), LV_DISPLAY_RENDER_MODE_PARTIAL);
+  lv_init();
+  display = lv_display_create(TFT_WIDTH, TFT_HEIGHT);
+  lv_display_set_flush_cb(display, my_flush_cb);
+  lv_display_set_buffers(display, buf1, nullptr, sizeof(buf1), LV_DISPLAY_RENDER_MODE_PARTIAL);
 
-    lv_indev_t * indev = lv_indev_create();
-    lv_indev_set_type(indev, LV_INDEV_TYPE_POINTER); /*Touchpad should have POINTER type*/
-    lv_indev_set_read_cb(indev, my_touchpad_read);
-    lv_tick_set_cb(my_tick);
+  lv_indev_t * indev = lv_indev_create();
+  lv_indev_set_type(indev, LV_INDEV_TYPE_POINTER); /*Touchpad should have POINTER type*/
+  lv_indev_set_read_cb(indev, my_touchpad_read);
+  lv_tick_set_cb(my_tick);
 
-    
-  
-  // lv_color_t* buf1 = (lv_color_t*) heap_caps_malloc(240 * 240, MALLOC_CAP_SPIRAM);
-  // lv_color_t* buf2 = (lv_color_t*) heap_caps_malloc(240 * 240, MALLOC_CAP_SPIRAM);
+  setup_ui(&guider_ui);
+  events_init(&guider_ui);
+  custom_init(&guider_ui);
+  /*------------------
+    * Keypad
+    * -----------------*/
+
+  /*Initialize your keypad or keyboard if you have*/
+  keypad_init();
+
+  /*Register a keypad input device*/
+  indev_keypad = lv_indev_create();
+  lv_indev_set_type(indev_keypad, LV_INDEV_TYPE_KEYPAD);
+  lv_indev_set_read_cb(indev_keypad, keypad_read);
+
+
+
+      /*Later you should create group(s) with `lv_group_t * group = lv_group_create()`,
+    *add objects to the group with `lv_group_add_obj(group, obj)`
+    *and assign this input device to group to navigate in it:
+    *`lv_indev_set_group(indev_encoder, group);`*/
+
+  lv_obj_t* tbs0 = lv_tabview_get_tab_btns(guider_ui.main_tabview_1);
+
+  lv_obj_t* tbs1 = lv_obj_get_child(tbs0, 0);
+  lv_obj_t* tbs2 = lv_obj_get_child(tbs0, 1);
+  lv_obj_t* tbs3 = lv_obj_get_child(tbs0, 2);
+  lv_group_focus_obj(tbs1);
+
+  group = lv_group_create();
+
+  lv_group_set_default(group);
+
+  // lv_group_focus_obj(group);          //分组聚焦到对象
+  lv_group_set_editing(group, true);   //编辑模式
+  // lv_group_add_obj(group, tbs0);
+  lv_group_add_obj(group, tbs1);
+  lv_group_add_obj(group, tbs2);
+  lv_group_add_obj(group, tbs3);
+  // lv_group_add_obj(group, guider_ui.main_tabview_1);
+  //  lv_group_add_obj(group, guider_ui.main_tabview_1_tab_1);
+  //  lv_group_add_obj(group, guider_ui.main_tabview_1_tab_2);
+  //  lv_group_add_obj(group, guider_ui.main_tabview_1_tab_3);
+  // lv_group_add_obj(group, guider_ui.main_btn_1);
+  // lv_group_add_obj(group, guider_ui.main_btn_2);
+  lv_indev_set_group(indev_keypad, group);
+
+// lv_color_t* buf1 = (lv_color_t*) heap_caps_malloc(240 * 240, MALLOC_CAP_SPIRAM);
+// lv_color_t* buf2 = (lv_color_t*) heap_caps_malloc(240 * 240, MALLOC_CAP_SPIRAM);
 //   lv_disp_draw_buf_init( &draw_buf, buf1, NULL, 240 * 240);
 
 //   /*Initialize the display*/
@@ -242,12 +343,256 @@ void lvgl_user_init(void)
 //   indev_drv.read_cb = my_touchpad_read;
 //   lv_indev_drv_register(&indev_drv);
 
-  setup_ui(&guider_ui);
-  events_init(&guider_ui);
-  custom_init(&guider_ui);
+
 }
 
-char joy1X_str[5];
+// 保存配对设备信息到NVS
+void savePairedDevices() {
+  preferences.begin("esnow_multi", false);
+  preferences.putUInt("paired_count", pairedCount);
+  preferences.putUInt("paired_index", pairIndex);
+  
+  for (int i = 0; i < pairedCount; i++) {
+    char macKey[20];
+    sprintf(macKey, "mac_%d", i);
+    preferences.putBytes(macKey, pairedDevices[i].mac, 6);
+    
+    char nameKey[20];
+    sprintf(nameKey, "name_%d", i);
+    preferences.putString(nameKey, pairedDevices[i].name);
+
+    Serial.println(macKey);
+    Serial.println(nameKey);
+  }
+  
+  preferences.end();
+  Serial.println("配对设备信息已保存");
+}
+
+void OnDataRecv(const uint8_t *mac, const uint8_t *incomingData, int len) {
+
+  switch (currentMode)
+  {
+  case MODE_JOYSTICK:{
+
+    memcpy(&ackData, incomingData, sizeof(ackData));
+    Serial.printf("ACK mode: %d battery: %d\r\n",ackData.mode, ackData.battery);
+
+    break;
+  }  
+  case MODE_PAIR:{
+
+
+    struct_pair myData;
+    memcpy(&myData, incomingData, sizeof(myData));
+    
+    // 处理配对响应
+    if (strcmp(myData.type, "PAIRING_RESP") == 0) {
+      // 检查是否已存在此设备
+      bool exists = false;
+      for (int i = 0; i < pairedCount; i++) {
+        if (memcmp(pairedDevices[i].mac, mac, 6) == 0) {
+          exists = true;
+          break;
+        }
+      }
+    // 如果不存在且未超过最大数量，则添加到配对列表
+      if (!exists && pairedCount < MAX_DEVICES) {
+        memcpy(pairedDevices[pairedCount].mac, mac, 6);
+        
+        // 从数据中提取设备名称（如果有）
+        if (myData.data_len > 0) {
+          strncpy(pairedDevices[pairedCount].name, (char*)myData.data, min(myData.data_len, 31));
+          pairedDevices[pairedCount].name[31] = '\0';
+        } else {
+          // 如果没有名称，使用MAC地址后4位作为默认名称
+          snprintf(pairedDevices[pairedCount].name, sizeof(pairedDevices[pairedCount].name), 
+                    "Device_%02X%02X", mac[4], mac[5]);
+        }
+        
+        pairedDevices[pairedCount].lastSeen = millis();
+        /* 当前设备切换为新配对的设备 */
+        pairIndex = pairedCount;
+        pairedCount++;
+        isPaired = true;
+        Serial.print("新设备已添加: ");
+        Serial.print(pairedDevices[pairedCount-1].name);
+        Serial.print("，当前配对设备数: ");
+        Serial.println(pairedCount);
+
+        esp_now_peer_info_t peerInfo;
+        memcpy(peerInfo.peer_addr, pairedDevices[pairIndex].mac, 6);
+        peerInfo.channel = 0;
+        peerInfo.encrypt = false;
+        peerInfo.ifidx = WIFI_IF_STA;//老版本没有
+        if (esp_now_add_peer(&peerInfo) != ESP_OK) {
+          Serial.println("Error initializing ESP-NOW");
+        // return;
+        }
+        
+        // 保存配对信息
+        savePairedDevices();
+
+        currentMode = MODE_JOYSTICK;
+      } else if (exists) {
+        Serial.println("设备已存在，无需重复添加");
+      } else {
+
+        memcpy(pairedDevices[MAX_DEVICES - 1].mac, mac, 6);
+        
+        // 从数据中提取设备名称（如果有）
+        if (myData.data_len > 0) {
+          strncpy(pairedDevices[MAX_DEVICES - 1].name, (char*)myData.data, min(myData.data_len, 31));
+          pairedDevices[MAX_DEVICES - 1].name[31] = '\0';
+        } else {
+          // 如果没有名称，使用MAC地址后4位作为默认名称
+          snprintf(pairedDevices[MAX_DEVICES - 1].name, sizeof(pairedDevices[MAX_DEVICES - 1].name), 
+                    "Device_%02X%02X", mac[4], mac[5]);
+        }
+        
+        pairedDevices[MAX_DEVICES - 1].lastSeen = millis();
+        /* 当前设备切换为新配对的设备 */
+        pairIndex = MAX_DEVICES - 1;
+        isPaired = true;
+        Serial.println("已达到最大设备数量限制，覆盖最后一个设备");
+
+        esp_now_peer_info_t peerInfo;
+        memcpy(peerInfo.peer_addr, pairedDevices[pairIndex].mac, 6);
+        peerInfo.channel = 0;
+        peerInfo.encrypt = false;
+        peerInfo.ifidx = WIFI_IF_STA;//老版本没有
+        if (esp_now_add_peer(&peerInfo) != ESP_OK) {
+          Serial.println("Error initializing ESP-NOW");
+        // return;
+        }
+        savePairedDevices();
+        currentMode = MODE_JOYSTICK;
+
+      }
+    }      
+
+    break;
+  } 
+  default:
+    break;
+
+  }
+}
+
+
+void listPairedDevices() {
+  Serial.println("已配对设备列表:");
+  Serial.println("索引\t设备名称\t\tMAC地址\t\t\t状态");
+  Serial.println("----------------------------------------------------------------");
+  
+  for (int i = 0; i < pairedCount; i++) {
+    char macStr[18];
+    snprintf(macStr, sizeof(macStr), "%02X:%02X:%02X:%02X:%02X:%02X",
+             pairedDevices[i].mac[0], pairedDevices[i].mac[1], pairedDevices[i].mac[2], 
+             pairedDevices[i].mac[3], pairedDevices[i].mac[4], pairedDevices[i].mac[5]);
+    
+    Serial.print(i);
+    Serial.print("\t");
+    Serial.print(pairedDevices[i].name);
+    // 格式化输出对齐
+    if (strlen(pairedDevices[i].name) < 8) Serial.print("\t");
+    if (strlen(pairedDevices[i].name) < 16) Serial.print("\t");
+    Serial.print("\t");
+    Serial.print(macStr);
+    Serial.print("\t");
+    
+    if (i == pairIndex) {
+      Serial.println("[当前设备]");
+    } else {
+      Serial.println("");
+    }
+  }
+  
+  if (pairedCount == 0) {
+    Serial.println("无已配对设备");
+  }
+}
+
+void loadPairedDevices() {
+
+  switch (currentMode)
+  {
+  case MODE_JOYSTICK:{
+
+    preferences.begin("esnow_multi", true); // 只读模式打开
+  /* 读取配对数 */
+    pairedCount = preferences.getUInt("paired_count", 0);
+    if (pairedCount)
+    {
+      /* 读取默认配对 */
+      for (int i = 0; i < pairedCount; i++) {
+          char macKey[20];
+          sprintf(macKey, "mac_%d", i);
+          preferences.getBytes(macKey, pairedDevices[i].mac, 6);
+          
+          char nameKey[20];
+          sprintf(nameKey, "name_%d", i);
+          pairedDevices[i].name[31] = '\0'; // 确保字符串终止
+          preferences.getString(nameKey, pairedDevices[i].name, 32);
+          
+          pairedDevices[i].lastSeen = 0;
+          Serial.println(macKey);
+          Serial.println(nameKey);
+      }
+      pairIndex = preferences.getUInt("paired_index", 0);
+
+      esp_now_peer_info_t peerInfo;
+      memcpy(peerInfo.peer_addr, pairedDevices[pairIndex].mac, 6);
+      peerInfo.channel = 0;
+      peerInfo.encrypt = false;
+      peerInfo.ifidx = WIFI_IF_STA;//老版本没有
+      if (esp_now_add_peer(&peerInfo) != ESP_OK) {
+        Serial.println("Error initializing ESP-NOW");
+      // return;
+      }
+      isPaired = true;
+
+    }
+    else/* 如果没有配对信息就使用默认值 */
+    {
+      esp_now_peer_info_t peerInfo;
+      memcpy(peerInfo.peer_addr, receiverMac, 6);
+      peerInfo.channel = 0;
+      peerInfo.encrypt = false;
+      peerInfo.ifidx = WIFI_IF_STA;//老版本没有
+      if (esp_now_add_peer(&peerInfo) != ESP_OK) {
+        Serial.println("Error initializing ESP-NOW");
+      // return;
+      }
+      isPaired = true;
+    }
+    
+    preferences.end();
+    break;
+  }  
+
+  case MODE_PAIR:{
+    /* 首先添加一个广播对等设备，用于发送配对请求 */
+    uint8_t broadcastMac[] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
+    esp_now_peer_info_t peerInfo;
+    memcpy(peerInfo.peer_addr, broadcastMac, 6);
+    peerInfo.channel = 0;
+    peerInfo.encrypt = false;
+    peerInfo.ifidx = WIFI_IF_STA;//老版本没有
+    if (esp_now_add_peer(&peerInfo) != ESP_OK) {
+      Serial.println("Error initializing ESP-NOW");
+    // return;
+    }
+    isPaired = false;
+    break;
+  }  
+  default:
+    break;
+  }
+}
+
+
+
 
 void setup() {
 
@@ -268,24 +613,39 @@ void setup() {
   WiFi.disconnect();
   // ???ESP-NOW
   if (esp_now_init() != ESP_OK) {
-    Serial.println("ESP-NOW?????");
+    Serial.println("ESP-NOW");
     return;
   }
+  esp_now_register_recv_cb(OnDataRecv);
+  /* 读取配对信息 */
+  loadPairedDevices();
+  /* 
+  
+  
+  
+  */
+  listPairedDevices();
 
-  // ??????
-  esp_now_peer_info_t peerInfo;
-  memcpy(peerInfo.peer_addr, receiverMac, 6);
-  peerInfo.channel = 0;
-  peerInfo.encrypt = false;
-  peerInfo.ifidx = WIFI_IF_STA;
-  if (esp_now_add_peer(&peerInfo) != ESP_OK) {
-    Serial.println("????????");
-   // return;
-  }
+  // currentMode = MODE_PAIR;
+  // loadPairedDevices();
+ 
+  // esp_now_peer_info_t peerInfo;
+  // memcpy(peerInfo.peer_addr, receiverMac, 6);
+  // peerInfo.channel = 0;
+  // peerInfo.encrypt = false;
+  // peerInfo.ifidx = WIFI_IF_STA;//老版本没有
+  // if (esp_now_add_peer(&peerInfo) != ESP_OK) {
+  //   Serial.println("Error initializing ESP-NOW");
+  //  // return;
+  // }
+
+  // esp_now_set_self_role(ESP_NOW_ROLE_COMBO);
+  
 
   Serial.print("ESP32 MAC Address: ");
   Serial.println(WiFi.macAddress());
 
+ 
   // ??????
   pinMode(JOY1_X, INPUT);
   pinMode(JOY1_Y, INPUT);
@@ -300,62 +660,20 @@ void setup() {
 
     // SPI.begin(2, -1, 1, -1);
 
-    tft.begin();
-    tft.setRotation(2);
-    tft.fillScreen(TFT_BLACK);
-    tft.setSwapBytes(true); 
+  tft.begin();
+  tft.setRotation(2);
+  tft.fillScreen(TFT_BLACK);
+  tft.setSwapBytes(true); 
 
-    pinMode(TFT_CS, OUTPUT);
-    digitalWrite(TFT_CS, HIGH); 
-    // tft.setFreeFont(FF18);
-    // tft.setSwapBytes(true); // We need to swap the colour bytes (endianess)
+  pinMode(TFT_CS, OUTPUT);
+  digitalWrite(TFT_CS, HIGH); 
 
-    // tft.setCursor(15, 10);
-    // tft.setTextFont(2);
-    // tft.setTextSize(1);
-    // tft.setTextColor(TFT_GREEN, TFT_BLACK);
-    // tft.printf("ABCDEFGH");
+  FastLED.addLeds<NEOPIXEL, RGB_PIN>(leds, NUM_LEDS); 
+  leds[0] = CHSV(HUE_BLUE, 255, 20);
+  FastLED.show();
 
-
-    // LV_FONT_DECLARE(lv_font_montserrat_14)
-
-    // lv_obj_t *btn = lv_button_create(lv_screen_active());
-    // lv_obj_center(btn);
-    // lv_obj_t *label = lv_label_create(btn);
-    // lv_label_set_text(label, "ABCD");
-    // lv_obj_center(label);
-    // lv_obj_set_style_text_font(label, &lv_font_montserrat_14, LV_PART_MAIN | LV_STATE_DEFAULT);
-
-//     lv_obj_t * slider;
-//     slider = lv_slider_create(lv_screen_active());
-//     lv_obj_center(slider);
-
-//     lv_slider_set_mode(slider, LV_SLIDER_MODE_RANGE);
-//     lv_slider_set_range(slider, MIN_VALUE, MAX_VALUE);
-//     lv_slider_set_value(slider, 70, LV_ANIM_OFF);
-//     lv_slider_set_left_value(slider, 20, LV_ANIM_OFF);
-//     lv_obj_set_size(slider, 5, 50);
-//    // lv_bar_set_orientation(slider,LV_BAR_ORIENTATION_VERTICAL);
-//     lv_obj_add_event_cb(slider, slider_event_cb, LV_EVENT_ALL, NULL);
-//     lv_obj_refresh_ext_draw_size(slider);
-
-
-//     lv_obj_t * slider1;
-//     slider1 = lv_slider_create(lv_screen_active());
-//     lv_obj_center(slider1);
-
-//     lv_slider_set_mode(slider1, LV_SLIDER_MODE_RANGE);
-//     lv_slider_set_range(slider1, MIN_VALUE, MAX_VALUE);
-//     lv_slider_set_value(slider1, 70, LV_ANIM_OFF);
-//     lv_slider_set_left_value(slider1, 20, LV_ANIM_OFF);
-//     lv_obj_set_size(slider1, 100, 10);
-//    // lv_bar_set_orientation(slider,LV_BAR_ORIENTATION_VERTICAL);
-//     lv_obj_add_event_cb(slider1, slider1_event_cb, LV_EVENT_ALL, NULL);
-//     lv_obj_refresh_ext_draw_size(slider1);
-
-
-//     Serial.print("inited");
-    lvgl_user_init();
+  analogReadResolution(12);
+  lvgl_user_init();
 
 
   xTaskCreate(GuiTask,"GuiTask",4096*2 ,NULL,1,NULL);
@@ -380,8 +698,7 @@ int16_t joy1Y = 0;
 int16_t joy2Y = 0;
 int16_t joy1X = 0;
 int16_t joy2X = 0;
-
-
+int16_t sendSuccessCount = 0;
 void loop() {
  
 
@@ -397,23 +714,57 @@ void loop() {
   joy2X = analogRead(JOY2_X);
 
   txData.joy1X = map(joy1X, MIN_JOY1_X, MAX_JOY1_X, 0, 4095);
-  txData.joy1Y = map(joy1Y, MIN_JOY1_Y, MAX_JOY1_Y, 0, 4095);
+  txData.joy1Y = map(joy1Y, MIN_JOY1_Y, MAX_JOY1_Y, 4095, 0);
   txData.joy2X = map(joy2X, MIN_JOY2_X, MAX_JOY2_X, 4095, 0);
   txData.joy2Y = map(joy2Y, MIN_JOY2_Y, MAX_JOY2_Y, 4095, 0);
 
- 
-  // Serial.printf("X1: %d, Y1: %d, X2: %d, Y2: %d\r\n",txData.joy1X,txData.joy1Y,txData.joy2X,txData.joy2Y );
-
-  esp_err_t result = esp_now_send(receiverMac, (uint8_t*)&txData, sizeof(txData));
+  // int rawValue = analogRead(BATTERY_PIN);
+  // batteryVoltage = (((float)rawValue / 4095.0) * 3.3 * voltageDividerRatio) - 0.4;
   
-  // if (result == ESP_OK) {
-  //   Serial.println("");
-  // } else {
-  //   Serial.println("");
-  // }
-//  lv_event_send();
-//  
- delay(10);
+  // batteryPercentage = map(constrain(batteryVoltage*100, minBatteryVoltage*100, maxBatteryVoltage*100), 
+  //                         minBatteryVoltage*100, maxBatteryVoltage*100, 0, 100);
+  // // Serial.printf("X1: %d, Y1: %d, X2: %d, Y2: %d\r\n",txData.joy1X,txData.joy1Y,txData.joy2X,txData.joy2Y );
+  // Serial.println(batteryPercentage);
+
+  
+   if (!isPaired) {
+    // 如果还未配对，则每隔5秒发送一次配对请求
+    Serial.println("Sending pairing request...");
+
+    struct_pair myRequest;
+    strcpy(myRequest.type, "PAIRING");
+    // 广播MAC地址已经在setup中添加
+    uint8_t broadcastMac[] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
+    esp_err_t result = esp_now_send(broadcastMac, (uint8_t *) &myRequest, sizeof(myRequest));
+
+    if (result == ESP_OK) {
+      Serial.println("Pairing request sent.");
+    } else {
+      Serial.println("Error sending pairing request.");
+    }
+    delay(5000);
+  } else {
+
+    esp_err_t result = esp_now_send(pairedDevices[pairIndex].mac, (uint8_t*)&txData, sizeof(txData));
+      
+    if (result == ESP_OK) {
+
+      sendSuccessCount = sendSuccessCount >= 200 ? 200 : sendSuccessCount+1; 
+      // Serial.println(sendSuccessCount);
+    } else {
+
+      sendSuccessCount =  sendSuccessCount <= -50 ? -50 : sendSuccessCount-10; ;
+      // Serial.println(sendSuccessCount);
+      }
+    //  lv_event_send();
+    //  
+    delay(5);
+
+  }
+
+
+
+  
 
 // lv_slider_set_value(guider_ui.main_slider_2, value, LV_ANIM_OFF);
 // refresh();
@@ -424,6 +775,8 @@ void loop() {
 // 电源管理任务
 void GuiTask(void *pvParameters) {
   static int count = 0;
+  static int btn_x = 0;
+  static int btn_y = 0;
   while (1) {
     // lv_bar_set_value(guider_ui.main_bar_2, txData.joy1X/100, LV_ANIM_OFF);
     // lv_obj_send_event(guider_ui.main_label_14, LV_EVENT_VALUE_CHANGED, &txData.joy1X);
@@ -439,12 +792,16 @@ void GuiTask(void *pvParameters) {
 
     count = map(txData.joy1X, MIN_JOY1_X, MID_JOY1_X, 0, -100);
     lv_bar_set_value(guider_ui.main_bar_3, count, LV_ANIM_OFF);
+    
+    count = map(txData.joy1Y, MAX_JOY1_Y, MID_JOY1_Y, 0, -100);
+    lv_bar_set_value(guider_ui.main_bar_4, count, LV_ANIM_OFF);
 
-    count = map(txData.joy1Y, MID_JOY1_Y, MAX_JOY1_Y, 0, 100);
+    count = map(txData.joy1Y, MID_JOY1_Y, MIN_JOY1_Y, 0, 100);
     lv_bar_set_value(guider_ui.main_bar_1, count, LV_ANIM_OFF);
 
-    count = map(txData.joy1Y, MIN_JOY1_Y, MID_JOY1_Y, 0, -100);
-    lv_bar_set_value(guider_ui.main_bar_4, count, LV_ANIM_OFF);
+    btn_x = map(txData.joy1X, MIN_JOY1_X, MAX_JOY1_X, 90, 0);
+    btn_y = map(txData.joy1Y, MIN_JOY1_Y, MAX_JOY1_Y, 90, 0);
+    lv_obj_set_pos(guider_ui.main_btn_1, btn_y, btn_x);
 //
     count = map(txData.joy2X, MID_JOY2_X, MAX_JOY2_X, 0, 100);
     lv_bar_set_value(guider_ui.main_bar_7, count, LV_ANIM_OFF);
@@ -458,8 +815,25 @@ void GuiTask(void *pvParameters) {
     count = map(txData.joy2Y, MIN_JOY2_Y, MID_JOY2_Y, 0, -100);
     lv_bar_set_value(guider_ui.main_bar_5, count, LV_ANIM_OFF);
 
+    
 
+    btn_x = map(txData.joy2X, MIN_JOY2_X, MAX_JOY2_X, 90, 0);
+    btn_y = map(txData.joy2Y, MIN_JOY2_Y, MAX_JOY2_Y, 0, 90);
+    lv_obj_set_pos(guider_ui.main_btn_2, btn_y, btn_x);
 
+    lv_bar_set_value(guider_ui.main_bar_9, ackData.battery, LV_ANIM_OFF);
+
+    if (sendSuccessCount > 0)
+    {
+      lv_obj_set_style_text_color(guider_ui.main_label_6, lv_color_hex(0x26B08C), LV_PART_MAIN|LV_STATE_DEFAULT);
+      lv_label_set_text(guider_ui.main_label_6,"Connected");
+    }
+    else
+    {      
+      lv_obj_set_style_text_color(guider_ui.main_label_6, lv_color_hex(0xff5b74), LV_PART_MAIN|LV_STATE_DEFAULT);
+      lv_label_set_text(guider_ui.main_label_6,"Not connected");
+    }
+    
 
     lv_timer_handler();
     vTaskDelay(5);  
@@ -467,5 +841,97 @@ void GuiTask(void *pvParameters) {
 }
 }
 
+
+
+void keypad_init()
+{
+  pinMode(KEY_R1_PIN,INPUT_PULLUP);
+  pinMode(KEY_R2_PIN,INPUT_PULLUP);
+  pinMode(KEY_R3_PIN,INPUT_PULLUP);
+}
+
+
+// int read_key(void)
+// {
+//     if(digitalRead(KEY_R1_PIN)==0)
+//     {
+//         return 2;
+//     }
+//     else if (digitalRead(KEY_R3_PIN)==0)
+//     {
+//         return 1;  
+//     }
+//      else if (digitalRead(KEY_R2_PIN)==0)
+//     {
+//         return 5; 
+//     }
+//     else
+//     {
+//         return -1;
+//     }
+// }
+
+static uint32_t keypad_get_key(void)
+{
+    if(digitalRead(KEY_R1_PIN)==0)
+    {
+        return 2;
+    }
+    else if (digitalRead(KEY_R3_PIN)==0)
+    {
+        return 5;  
+    }
+     else if (digitalRead(KEY_R2_PIN)==0)
+    {
+        return 1; 
+    }
+    else
+    {
+        return 0;
+    }
+
+    return 0;
+}
+
+static void keypad_read(lv_indev_t * indev_drv, lv_indev_data_t * data)
+{
+    static uint32_t last_key = 0;
+
+    /*Get the current x and y coordinates*/
+    // mouse_get_xy(&data->point.x, &data->point.y);
+
+    /*Get whether the a key is pressed and save the pressed key*/
+    uint32_t act_key = keypad_get_key();
+    // Serial.println(act_key);
+    if(act_key != 0) {
+        data->state = LV_INDEV_STATE_PRESSED;
+
+        /*Translate the keys to LVGL control characters according to your key definitions*/
+        switch(act_key) {
+            case 1:
+                act_key = LV_KEY_NEXT;
+                break;
+            case 2:
+                act_key = LV_KEY_PREV;
+                break;
+            case 3:
+                act_key = LV_KEY_LEFT;
+                break;
+            case 4:
+                act_key = LV_KEY_RIGHT;
+                break;
+            case 5:
+                act_key = LV_KEY_ENTER;
+                break;
+        }
+
+        last_key = act_key;
+    }
+    else {
+        data->state = LV_INDEV_STATE_RELEASED;
+    }
+
+    data->key = last_key;
+}
 
 #endif

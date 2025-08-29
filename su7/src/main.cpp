@@ -23,7 +23,7 @@
 #define MODE_SWITCH_PIN 1
 
 #define NUM_LEDS 1
-
+CRGB leds[NUM_LEDS];
 // WiFi设置 - 两个独立的SSID
 const char* mobileSsid = "ESP32C3-Car";  // 手机遥控模式热点
 const char* password = "12345678";        // 通用密码
@@ -32,11 +32,33 @@ const char* password = "12345678";        // 通用密码
 enum OperationMode {
   MODE_MOBILE,    // 手机遥控模式
   MODE_JOYSTICK,  // 摇杆控制模式
-  MODE_OTA        // OTA更新模式
+  MODE_OTA,        // OTA更新模式
+  MODE_PAIR
 };
+// 定义一个结构体作为通信的数据格式
+// typedef struct {
+//   char instruction[32]; // 指令，例如 "PAIR_REQUEST" 或 "PAIR_RESPONSE"
+//   uint8_t mac[6];       // 用于携带MAC地址
+// } message_t;
+// // 定义通信数据结构
+typedef struct  {
+  char type[16];    // 消息类型
+  uint8_t data[32]; // 数据载荷
+  int data_len;     // 数据长度
+} message_t;
+// 创建一个变量来保存发送端的MAC地址
 
-volatile OperationMode currentMode = MODE_MOBILE;
-CRGB leds[NUM_LEDS];
+typedef struct {
+  uint8_t mac[6];
+  char name[32];
+} controller_info_t;
+
+controller_info_t controllerInfo;
+
+uint8_t controllerMac[6];
+
+volatile OperationMode currentMode = MODE_JOYSTICK;
+
 
 // 舵机参数
 const int servoMin = 1050;
@@ -168,6 +190,11 @@ void switchMode(OperationMode newMode) {
     Serial.println("OTA");
     leds[0] =CHSV(HUE_RED, 255, 30);
     break;
+
+    case MODE_PAIR: 
+    Serial.println("Pair");
+    leds[0] =CHSV(HUE_PURPLE, 255, 30);
+    break;
   }
   
   cleanupCurrentMode();
@@ -176,7 +203,8 @@ void switchMode(OperationMode newMode) {
   switch(newMode) {
     case MODE_MOBILE: initMobileMode(); break;
     case MODE_JOYSTICK: initJoystickMode(); break;
-   case MODE_OTA: initOtaMode(); break;
+    case MODE_OTA: initOtaMode(); break;
+    case MODE_PAIR: initJoystickMode(); break;
   }
   
   // 更新LED指示
@@ -238,18 +266,131 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length
 
 // ESP-NOW数据接收回调
 void onDataRecv(const uint8_t *mac, const uint8_t *data, int len) {
-  if(currentMode != MODE_JOYSTICK) return;
-  
-  memcpy(&rxData, data, sizeof(rxData));
-  int servoAngle = map(rxData.joy1Y, 0, 4095, servoMin, servoMax);
-  myservo.writeMicroseconds(servoAngle); 
-  int motorSpeed = map(rxData.joy2X, 0, 4095, 255, -255);
-  setMotorSpeed(motorSpeed);
-  
-  Serial.print("angle:");
-  Serial.print(servoAngle);
-  Serial.print(" speed:");
-  Serial.println(motorSpeed);
+
+  // if(currentMode != MODE_JOYSTICK) return;
+  switch (currentMode)
+  {
+  case MODE_JOYSTICK:
+  {
+    static uint16_t count = 200;
+    memcpy(&rxData, data, sizeof(rxData));
+    int servoAngle = map(rxData.joy1Y, 0, 4095, servoMin, servoMax);
+    myservo.writeMicroseconds(servoAngle); 
+    int motorSpeed = map(rxData.joy2X, 0, 4095, 255, -255);
+    setMotorSpeed(motorSpeed);
+    
+    // Serial.print("angle:");
+    // Serial.print(servoAngle);
+    // Serial.print(" speed:");
+    // Serial.println(motorSpeed);
+
+    if (count++ >= 200)
+    {
+        // 检查是否已经添加过此设备
+      if (esp_now_is_peer_exist(mac)) {
+        // 设备已存在，无需再次添加
+      } else {
+        esp_now_peer_info_t peerInfo;
+        memcpy(peerInfo.peer_addr, mac, 6);
+        peerInfo.channel = 0;
+        peerInfo.encrypt = false;
+        peerInfo.ifidx = WIFI_IF_STA;//老版本没有
+        if (esp_now_add_peer(&peerInfo) != ESP_OK) {
+          Serial.println("Error initializing ESP-NOW");
+        // return;
+        }
+        Serial.println("New peer added successfully");
+      }
+      ackData.mode = currentMode;
+      ackData.battery = batteryPercentage;
+      esp_err_t result = esp_now_send(mac, (uint8_t *) &ackData, sizeof(ackData));
+
+      if (result == ESP_OK) {
+        Serial.println("ACK sent successfully");
+      } else {
+        Serial.println("Error sending ACK");
+      }
+      count = 0;
+    }
+    
+    break;
+  }
+  case MODE_PAIR:
+  {
+    // memcpy(&controllerMac, mac, sizeof(controllerMac)); // 保存发送端的MAC
+    // Serial.print("Bytes received: ");
+    // Serial.println(len);
+    Serial.printf("%02X:%02X:%02X:%02X:%02X:%02X\r\n",
+           mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+    message_t myData;
+    memcpy(&myData, data, sizeof(myData));
+
+    Serial.print("type: ");
+    Serial.println(myData.type);
+
+
+
+    bool isBroadcast = true;
+    // for (int i = 0; i < 6; i++) {
+    //   // Serial.print(mac[i]);
+    //   if (mac[i] != 0xFF) {
+    //     isBroadcast = false;
+    //     break;
+    //   }
+    //   Serial.println();
+    // }
+    Serial.println(isBroadcast);
+    Serial.println(strcmp(myData.type, "PAIRING"));
+
+    // 判断是否是配对请求
+    if (isBroadcast && (strcmp(myData.type, "PAIRING") == 0)) {
+
+      memcpy(controllerInfo.mac, mac, 6);
+          // 生成设备名称（使用MAC地址后4位）
+      String macAddress = WiFi.macAddress();
+      String devName = "ESP_Device_" + macAddress.substring(12, 14) + macAddress.substring(15, 17);
+      strncpy(controllerInfo.name, devName.c_str(), sizeof(controllerInfo.name) - 1);
+      controllerInfo.name[sizeof(controllerInfo.name) - 1] = '\0';
+      Serial.println(controllerInfo.name);
+      // 准备一个配对响应消息
+      // 获取本设备的MAC地址并填入结构体
+      // WiFi.macAddress(response.mac);
+
+      // 将之前保存的“控制器”MAC地址添加为对等设备
+      esp_now_peer_info_t peerInfo = {};
+      memcpy(peerInfo.peer_addr, mac, 6);
+      peerInfo.channel = 0;
+      peerInfo.encrypt = false;
+      peerInfo.ifidx = WIFI_IF_STA;
+      esp_now_add_peer(&peerInfo);
+
+      message_t response;
+      strcpy(response.type, "PAIRING_RESP");
+      strncpy((char*)response.data, controllerInfo.name, sizeof(response.data) - 1);
+      response.data_len = strlen(controllerInfo.name);
+      
+      esp_err_t result = esp_now_send(controllerInfo.mac, (uint8_t *) &response, sizeof(response));
+      
+      if (result == ESP_OK) {
+        Serial.println("配对响应已发送");
+      } else {
+        Serial.println("发送配对响应失败");
+      }
+    }
+    else if (isBroadcast && (sizeof(rxData) == len))
+    {
+      switchMode(MODE_JOYSTICK);
+    }
+    break;  
+  }
+   
+  // default:
+  //   return;
+  //   break;
+  }
+
+
+
 }
 
 
@@ -320,19 +461,53 @@ void longPress() {
   FastLED.show();
 }  // lo
 
+
+bool isPair()
+{
+  uint16_t count = 0;
+  /* If the button is pressed continuously */
+  while (!digitalRead(POWER_KEY_PIN))
+  {
+    count++;
+    if (count >= 700)
+    {
+      currentMode = MODE_PAIR;
+      break;
+      /* code */
+    }
+    /* code */
+    delay(10);
+  }
+
+  return true;
+  
+}
+
 void setup() {
+  /*上电保持*/
   pinMode(POWER_PIN, OUTPUT);
   digitalWrite(POWER_PIN, HIGH);
+
+  pinMode(POWER_KEY_PIN, INPUT_PULLUP);
+
   Serial.begin(115200);
+
+
+  /*判断按键是否一直按下*/
+
+  //isPress()
+  isPair();
+
+  /*如果按键一直按下超过7s，进入配对模式*/
   
-  pinMode(MODE_SWITCH_PIN, INPUT_PULLUP);
+  /* 否则正常初始化 */ 
   
-  // 舵机初始化
+   /* 舵机初始化 */
   myservo.setPeriodHertz(50);
   myservo.attach(STEERING_PIN, 2, 1000, 2000);
   myservo.writeMicroseconds(servoCenter); 
   
-  // 电机PWM初始化
+   /* 电机PWM初始化 */
   ledcSetup(0, 5000, 8);
   ledcAttachPin(MOTOR_A_PWM, 0);
   ledcSetup(1, 5000, 8);
@@ -341,24 +516,22 @@ void setup() {
   pinMode(CAR_SLEEP_PIN, OUTPUT);
   digitalWrite(CAR_SLEEP_PIN, HIGH);
 
-  pinMode(POWER_KEY_PIN, INPUT);
-  // button.setup(POWER_KEY_PIN, INPUT_PULLUP, false);
-  // link the doubleclick function to be called on a doubleclick event.
+  /* 按键设置 */
   button.setPressMs(1500);
-
   button.attachDoubleClick(doubleClick);
   button.attachLongPressStart(longPress);
 
+  /* 电池电压ADC设置 */
   analogReadResolution(12);
   updateBatteryInfo();
 
 
-  // LED初始化
+  /* LED初始化 */
   FastLED.addLeds<NEOPIXEL, RGB_PIN>(leds, NUM_LEDS); 
   leds[0] = CHSV(HUE_BLUE, 255, ledBrightness[currentMode]);
   FastLED.show();
 
-  // 初始模式
+  /* 初始模式 */
   switchMode(currentMode);
   
   // 创建电源管理任务
