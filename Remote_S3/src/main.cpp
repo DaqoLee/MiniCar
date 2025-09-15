@@ -27,9 +27,9 @@
 #define NUM_LEDS 1
 CRGB leds[NUM_LEDS];
 // 
-#define JOY1_X 6
-#define JOY1_Y 7
-#define JOY2_X 5
+#define JOY1_X 4
+#define JOY1_Y 5
+#define JOY2_X 2
 #define JOY2_Y 1
 
 #define MAX_JOY1_X 3400
