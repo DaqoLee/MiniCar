@@ -948,6 +948,7 @@ static void keypad_read(lv_indev_t * indev_drv, lv_indev_data_t * data)
 #include "Pages/StartUp/StartUpView.h"
 #include "Version.h"
 #include "Resource/ResourcePool.h"
+#include "main.h"
 /*To use the built-in examples and demos of LVGL uncomment the includes below respectively.
  *You also need to copy `lvgl/examples` to `lvgl/src/examples`. Similarly for the demos `lvgl/demos` to `lvgl/src/demos`.
  Note that the `lv_examples` library is for LVGL v7 and you shouldn't install it for this version (since LVGL v8)
@@ -961,6 +962,8 @@ static lv_disp_draw_buf_t draw_buf;
 static lv_color_t buf[ screenWidth * screenHeight / 10 ];
 static lv_color_t buf1[ screenWidth * screenHeight / 10 ];
 TFT_eSPI tft = TFT_eSPI(screenWidth, screenHeight); /* TFT instance */
+
+void lv_port_indev_init(void);
 
 #if LV_USE_LOG != 0
 /* Serial debugging */
@@ -1025,7 +1028,7 @@ void setup()
     Serial.println( "I am LVGL_Arduino" );
 
     lv_init();
-
+   
 #if LV_USE_LOG != 0
     lv_log_register_print_cb( my_print ); /* register print function for debugging */
 #endif
@@ -1071,6 +1074,8 @@ void setup()
     // lv_obj_align( label, LV_ALIGN_CENTER, 0, 0 );
 
 #endif
+
+   lv_port_indev_init();
    App_Init();
 
   Serial.println( "Setup done" );
@@ -1083,6 +1088,107 @@ void loop()
     // Serial.printf("d: %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f\n",10.1f,11.1f,12.1f,13.1f,14.1f,15.1f,16.1f,12.1f,13.1f,14.1f,15.1f,16.1f);
     delay( 5 );
 }
+
+void keypad_init()
+{
+  pinMode(KEY_R1_PIN,INPUT_PULLUP);
+  pinMode(KEY_R2_PIN,INPUT_PULLUP);
+  pinMode(KEY_R3_PIN,INPUT_PULLUP);
+}
+
+
+static uint32_t keypad_get_key(void)
+{
+    if(digitalRead(KEY_R1_PIN)==0)
+    {
+        return 2;
+    }
+    else if (digitalRead(KEY_R3_PIN)==0)
+    {
+        return 5;  
+    }
+     else if (digitalRead(KEY_R2_PIN)==0)
+    {
+        return 1; 
+    }
+    else
+    {
+        return 0;
+    }
+
+    return 0;
+}
+
+static void keypad_read(lv_indev_drv_t * indev_drv, lv_indev_data_t * data)
+{
+    static uint32_t last_key = 0;
+
+    /*Get the current x and y coordinates*/
+    // mouse_get_xy(&data->point.x, &data->point.y);
+
+    /*Get whether the a key is pressed and save the pressed key*/
+    uint32_t act_key = keypad_get_key();
+    // Serial.println(act_key);
+    if(act_key != 0) {
+        data->state = LV_INDEV_STATE_PRESSED;
+
+        /*Translate the keys to LVGL control characters according to your key definitions*/
+        switch(act_key) {
+            case 1:
+                act_key = LV_KEY_NEXT;
+                break;
+            case 2:
+                act_key = LV_KEY_PREV;
+                break;
+            case 3:
+                act_key = LV_KEY_LEFT;
+                break;
+            case 4:
+                act_key = LV_KEY_RIGHT;
+                break;
+            case 5:
+                act_key = LV_KEY_ENTER;
+                break;
+        }
+
+        last_key = act_key;
+    }
+    else {
+        data->state = LV_INDEV_STATE_RELEASED;
+    }
+
+    data->key = last_key;
+}
+
+lv_group_t* group;
+lv_indev_drv_t indev_drv;
+
+void lv_port_indev_init(void)
+{
+
+    /*------------------
+     * Encoder
+     * -----------------*/
+
+    /*Initialize your encoder if you have*/
+    keypad_init();
+
+    /*Register a encoder input device*/
+    lv_indev_drv_init(&indev_drv);
+    indev_drv.type = LV_INDEV_TYPE_KEYPAD;
+    indev_drv.read_cb = keypad_read;
+    lv_indev_t* indev = lv_indev_drv_register(&indev_drv);
+    
+    group = lv_group_create();
+    lv_indev_set_group(indev, group);
+    lv_group_set_default(group);
+
+    /* Later you should create group(s) with `lv_group_t * group = lv_group_create()`,
+     * add objects to the group with `lv_group_add_obj(group, obj)`
+     * and assign this input device to group to navigate in it:
+     * `lv_indev_set_group(indev_encoder, group);` */
+}
+
 
 #endif
 
