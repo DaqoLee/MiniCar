@@ -256,7 +256,7 @@ static uint32_t my_tick(void)
 }
 void lvgl_user_init(void)
 {
-  lv_init();
+  // lv_init();
   
   /*Set the touchscreen calibration data,
     the actual data for your display can be acquired using

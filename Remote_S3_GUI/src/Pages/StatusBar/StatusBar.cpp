@@ -139,55 +139,55 @@ static lv_obj_t* StatusBar_RecAnimLabelCreate(lv_obj_t* par)
 
 static void StatusBar_Update(lv_timer_t* timer)
 {
-    // /* satellite */
-    // HAL::GPS_Info_t gps;
-    // if(actStatusBar->Pull("GPS", &gps, sizeof(gps)) == Account::RES_OK)
-    // {
-    //     lv_label_set_text_fmt(ui.satellite.label, "%d", gps.satellites);
-    // }
+    /* satellite */
+    HAL::GPS_Info_t gps;
+    if(actStatusBar->Pull("GPS", &gps, sizeof(gps)) == Account::RES_OK)
+    {
+        lv_label_set_text_fmt(ui.satellite.label, "%d", gps.satellites);
+    }
 
-    // DataProc::Storage_Basic_Info_t sdInfo;
-    // if(actStatusBar->Pull("Storage", &sdInfo, sizeof(sdInfo)) == Account::RES_OK)
-    // {
-    //     sdInfo.isDetect ? lv_obj_clear_state(ui.imgSD, LV_STATE_DISABLED) : lv_obj_add_state(ui.imgSD, LV_STATE_DISABLED);
-    // }
+    DataProc::Storage_Basic_Info_t sdInfo;
+    if(actStatusBar->Pull("Storage", &sdInfo, sizeof(sdInfo)) == Account::RES_OK)
+    {
+        sdInfo.isDetect ? lv_obj_clear_state(ui.imgSD, LV_STATE_DISABLED) : lv_obj_add_state(ui.imgSD, LV_STATE_DISABLED);
+    }
 
-    // /* clock */
-    // HAL::Clock_Info_t clock;
-    // if(actStatusBar->Pull("Clock", &clock, sizeof(clock)) == Account::RES_OK)
-    // {
-    //     lv_label_set_text_fmt(ui.labelClock, "%02d:%02d", clock.hour, clock.minute);
-    // }
+    /* clock */
+    HAL::Clock_Info_t clock;
+    if(actStatusBar->Pull("Clock", &clock, sizeof(clock)) == Account::RES_OK)
+    {
+        lv_label_set_text_fmt(ui.labelClock, "%02d:%02d", clock.hour, clock.minute);
+    }
 
-    // /* battery */
-    // HAL::Power_Info_t power;
-    // if(actStatusBar->Pull("Power", &power, sizeof(power)) == Account::RES_OK)
-    // {
-    //     lv_label_set_text_fmt(ui.battery.label, "%d", power.usage);
-    // }
+    /* battery */
+    HAL::Power_Info_t power;
+    if(actStatusBar->Pull("Power", &power, sizeof(power)) == Account::RES_OK)
+    {
+        lv_label_set_text_fmt(ui.battery.label, "%d", power.usage);
+    }
 
-    // bool Is_BattCharging = power.isCharging;
-    // lv_obj_t* contBatt = ui.battery.objUsage;
-    // static bool Is_BattChargingAnimActive = false;
-    // if(Is_BattCharging)
-    // {
-    //     if(!Is_BattChargingAnimActive)
-    //     {
-    //         StatusBar_AnimCreate(contBatt);
-    //         Is_BattChargingAnimActive = true;
-    //     }
-    // }
-    // else
-    // {
-    //     if(Is_BattChargingAnimActive)
-    //     {
-    //         lv_anim_del(contBatt, nullptr);
-    //         StatusBar_ConBattSetOpa(contBatt, LV_OPA_COVER);
-    //         Is_BattChargingAnimActive = false;
-    //     }
-    //     lv_coord_t height = lv_map(power.usage, 0, 100, 0, BATT_USAGE_HEIGHT);
-    //     lv_obj_set_height(contBatt, height);
-    // }
+    bool Is_BattCharging = power.isCharging;
+    lv_obj_t* contBatt = ui.battery.objUsage;
+    static bool Is_BattChargingAnimActive = false;
+    if(Is_BattCharging)
+    {
+        if(!Is_BattChargingAnimActive)
+        {
+            StatusBar_AnimCreate(contBatt);
+            Is_BattChargingAnimActive = true;
+        }
+    }
+    else
+    {
+        if(Is_BattChargingAnimActive)
+        {
+            lv_anim_del(contBatt, nullptr);
+            StatusBar_ConBattSetOpa(contBatt, LV_OPA_COVER);
+            Is_BattChargingAnimActive = false;
+        }
+        lv_coord_t height = lv_map(power.usage, 0, 100, 0, BATT_USAGE_HEIGHT);
+        lv_obj_set_height(contBatt, height);
+    }
 }
 
 static void StatusBar_StyleInit(lv_obj_t* cont)

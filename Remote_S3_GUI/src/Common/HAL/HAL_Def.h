@@ -52,6 +52,17 @@ typedef struct
     int16_t steps;
 } IMU_Info_t;
 
+/* IMU */
+typedef struct
+{
+    int16_t x1; 
+    int16_t y1; 
+    int16_t x2; 
+    int16_t y2; 
+} Joystick_Info_t;
+
+
+
 /* SportStatus */
 typedef struct
 {

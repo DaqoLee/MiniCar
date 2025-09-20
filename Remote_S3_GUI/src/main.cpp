@@ -949,19 +949,19 @@ static void keypad_read(lv_indev_t * indev_drv, lv_indev_data_t * data)
 #include "Version.h"
 #include "Resource/ResourcePool.h"
 #include "main.h"
+#include "HAL/HAL.h"
 /*To use the built-in examples and demos of LVGL uncomment the includes below respectively.
  *You also need to copy `lvgl/examples` to `lvgl/src/examples`. Similarly for the demos `lvgl/demos` to `lvgl/src/demos`.
  Note that the `lv_examples` library is for LVGL v7 and you shouldn't install it for this version (since LVGL v8)
  as the examples and demos are now part of the main LVGL library. */
 
 /*Change to your screen resolution*/
+
 static const uint16_t screenWidth  = 240;
 static const uint16_t screenHeight = 240;
+#define SCREEN_BUFFER_SIZE (screenWidth * screenHeight)
 
-static lv_disp_draw_buf_t draw_buf;
-static lv_color_t buf[ screenWidth * screenHeight / 10 ];
-static lv_color_t buf1[ screenWidth * screenHeight / 10 ];
-TFT_eSPI tft = TFT_eSPI(screenWidth, screenHeight); /* TFT instance */
+TFT_eSPI tft = TFT_eSPI(); /* TFT instance */
 
 void lv_port_indev_init(void);
 
@@ -986,6 +986,11 @@ void my_disp_flush( lv_disp_drv_t *disp_drv, const lv_area_t *area, lv_color_t *
     tft.endWrite();
 
     lv_disp_flush_ready( disp_drv );
+}
+
+static void disp_wait_cb(lv_disp_drv_t* disp_drv)
+{
+   // __wfi();
 }
 
 /*Read the touchpad*/
@@ -1017,6 +1022,16 @@ void my_touchpad_read( lv_indev_drv_t * indev_drv, lv_indev_data_t * data )
 lv_anim_timeline_t* anim_timeline;
 lv_obj_t* ucont;
 lv_obj_t* labelLogo;
+
+// 电源管理任务
+void PowerTask(void *pvParameters) {
+  static uint16_t count = 0;
+  while (1) {
+    HAL::HAL_Update();
+    delay(5);
+  }
+}
+
 void setup()
 {
     Serial.begin( 115200 ); /* prepare for possible serial debug */
@@ -1026,6 +1041,8 @@ void setup()
 
     Serial.println( LVGL_Arduino );
     Serial.println( "I am LVGL_Arduino" );
+
+
 
     lv_init();
    
@@ -1039,7 +1056,7 @@ void setup()
     tft.begin();
     tft.setRotation(2);
     tft.fillScreen(TFT_BLACK);
-    tft.setSwapBytes(true); 
+    // tft.setSwapBytes(true); 
     /*Set the touchscreen calibration data,
      the actual data for your display can be acquired using
      the Generic -> Touch_calibrate example from the TFT_eSPI library*/
@@ -1048,25 +1065,41 @@ void setup()
 
   
 #if 1
-    lv_disp_draw_buf_init( &draw_buf, buf, buf1, screenWidth * screenHeight / 10 );
+    // lv_disp_draw_buf_init( &draw_buf, buf, buf1, screenWidth * screenHeight / 10 );
+
+    // /*Initialize the display*/
+    // static lv_disp_drv_t disp_drv;
+    // lv_disp_drv_init( &disp_drv );
+    // /*Change the following line to your display resolution*/
+    // disp_drv.hor_res = screenWidth;
+    // disp_drv.ver_res = screenHeight;
+    // disp_drv.flush_cb = my_disp_flush;
+    // disp_drv.draw_buf = &draw_buf;
+    // lv_disp_drv_register( &disp_drv );
+
+
+    static lv_color_t lv_disp_buf1[SCREEN_BUFFER_SIZE];
+    static lv_color_t lv_disp_buf2[SCREEN_BUFFER_SIZE];
+
+    static lv_disp_draw_buf_t disp_buf;
+    lv_disp_draw_buf_init(&disp_buf, lv_disp_buf1, lv_disp_buf2, SCREEN_BUFFER_SIZE);
 
     /*Initialize the display*/
     static lv_disp_drv_t disp_drv;
-    lv_disp_drv_init( &disp_drv );
-    /*Change the following line to your display resolution*/
+    lv_disp_drv_init(&disp_drv);
     disp_drv.hor_res = screenWidth;
     disp_drv.ver_res = screenHeight;
     disp_drv.flush_cb = my_disp_flush;
-    disp_drv.draw_buf = &draw_buf;
-    lv_disp_drv_register( &disp_drv );
+    disp_drv.wait_cb = disp_wait_cb;
+    disp_drv.draw_buf = &disp_buf;
+    lv_disp_drv_register(&disp_drv);
 
-#define COLOR_ORANGE    lv_color_hex(0xff931e)
     /*Initialize the (dummy) input device driver*/
-    static lv_indev_drv_t indev_drv;
-    lv_indev_drv_init( &indev_drv );
-    indev_drv.type = LV_INDEV_TYPE_POINTER;
-    indev_drv.read_cb = my_touchpad_read;
-    lv_indev_drv_register( &indev_drv );
+    // static lv_indev_drv_t indev_drv;
+    // lv_indev_drv_init( &indev_drv );
+    // indev_drv.type = LV_INDEV_TYPE_POINTER;
+    // indev_drv.read_cb = my_touchpad_read;
+    // lv_indev_drv_register( &indev_drv );
   
     /* Create simple label */
     // lv_obj_t *label = lv_label_create( lv_scr_act() );
@@ -1074,17 +1107,20 @@ void setup()
     // lv_obj_align( label, LV_ALIGN_CENTER, 0, 0 );
 
 #endif
-
+   HAL::HAL_Init();
    lv_port_indev_init();
    App_Init();
+
+   xTaskCreate(PowerTask, "PowerTask", 4096, NULL, 1, NULL);
 
   Serial.println( "Setup done" );
 }
 
 void loop()
 {
+   
     lv_timer_handler(); /* let the GUI do its work */
-
+    HAL::Joystick_Update();
     // Serial.printf("d: %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f\n",10.1f,11.1f,12.1f,13.1f,14.1f,15.1f,16.1f,12.1f,13.1f,14.1f,15.1f,16.1f);
     delay( 5 );
 }

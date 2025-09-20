@@ -11,6 +11,7 @@ void SystemInfosModel::Init()
     account->Subscribe("GPS");
     account->Subscribe("MAG");
     account->Subscribe("IMU");
+    account->Subscribe("Joystick");
     account->Subscribe("Clock");
     account->Subscribe("Power");
     account->Subscribe("Storage");
@@ -89,20 +90,34 @@ void SystemInfosModel::GetIMUInfo(
     char* info, uint32_t len
 )
 {
-    HAL::IMU_Info_t imu = { 0 };
+    // HAL::IMU_Info_t imu = { 0 };
 
-    account->Pull("IMU", &imu, sizeof(imu));
-    *step = imu.steps;
+    // account->Pull("IMU", &imu, sizeof(imu));
+    // *step = imu.steps;
+    // snprintf(
+    //     info,
+    //     len,
+    //     "%d\n%d\n%d\n%d\n%d\n%d",
+    //     imu.ax,
+    //     imu.ay,
+    //     imu.az,
+    //     imu.gx,
+    //     imu.gy,
+    //     imu.gz
+    // );
+
+    HAL::Joystick_Info_t joystick = { 0 };
+
+    account->Pull("Joystick", &joystick, sizeof(joystick));
+  
     snprintf(
         info,
         len,
-        "%d\n%d\n%d\n%d\n%d\n%d",
-        imu.ax,
-        imu.ay,
-        imu.az,
-        imu.gx,
-        imu.gy,
-        imu.gz
+        "%d\n%d\n%d\n%d",
+        joystick.x1,
+        joystick.y1,
+        joystick.x2,
+        joystick.y2
     );
 }
 

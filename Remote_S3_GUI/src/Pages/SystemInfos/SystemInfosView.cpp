@@ -1,5 +1,5 @@
 #include "SystemInfosView.h"
-
+#include <cstdio>
 using namespace Page;
 
 #define ITEM_HEIGHT_MIN   100
@@ -23,8 +23,8 @@ void SystemInfosView::Create(lv_obj_t* root)
     Item_Create(
         &ui.sport,
         root,
-        "Sport",
-        "bicycle",
+        "Home",
+        "home",
 
         "Total trip\n"
         "Total time\n"
@@ -35,8 +35,8 @@ void SystemInfosView::Create(lv_obj_t* root)
     Item_Create(
         &ui.gps,
         root,
-        "GPS",
-        "map_location",
+        "Calibrate",
+        "calibrate",
 
         "Latitude\n"
         "Longitude\n"
@@ -50,8 +50,8 @@ void SystemInfosView::Create(lv_obj_t* root)
     Item_Create(
         &ui.mag,
         root,
-        "MAG",
-        "compass",
+        "Pair",
+        "pair",
 
         "Compass\n"
         "X\n"
@@ -63,8 +63,8 @@ void SystemInfosView::Create(lv_obj_t* root)
     Item_Create(
         &ui.imu,
         root,
-        "IMU",
-        "gyroscope",
+        "Device",
+        "device",
 
         "Step\n"
         "Ax\n"
@@ -160,12 +160,22 @@ void SystemInfosView::SetScrollToY(lv_obj_t* obj, lv_coord_t y, lv_anim_enable_t
     lv_obj_scroll_by(obj, 0, diff, en);
 }
 
+void SystemInfosView::SetScrollToX(lv_obj_t* obj, lv_coord_t x, lv_anim_enable_t en)
+{
+    lv_coord_t scroll_x = lv_obj_get_scroll_x(obj);
+    lv_coord_t diff = -x + scroll_x;
+
+    lv_obj_scroll_by(obj, 0, diff, en);
+}
+
 void SystemInfosView::onFocus(lv_group_t* g)
 {
     lv_obj_t* icon = lv_group_get_focused(g);
     lv_obj_t* cont = lv_obj_get_parent(icon);
     lv_coord_t y = lv_obj_get_y(cont);
     lv_obj_scroll_to_y(lv_obj_get_parent(cont), y, LV_ANIM_ON);
+    // lv_coord_t x = lv_obj_get_x(cont);
+    // lv_obj_scroll_to_x(lv_obj_get_parent(cont), x, LV_ANIM_ON);
 }
 
 void SystemInfosView::Style_Init()
@@ -356,13 +366,26 @@ void SystemInfosView::SetIMU(
     const char* info
 )
 {
-    lv_label_set_text_fmt(
-        ui.imu.labelData,
-        "%d\n"
-        "%s",
-        step,
-        info
-    );
+    // lv_label_set_text_fmt(
+    //     ui.imu.labelData,
+    //     "%d\n"
+    //     "%s",
+    //     step,
+    //     info
+    // );
+
+
+            // 使用静态缓冲区
+    static char buffer[64];
+    //usage = CLAMP(usage, 0, 100);
+    
+    // 先格式化到缓冲区
+    snprintf(buffer, sizeof(buffer),
+        "%d\n%s",
+        1, info);
+    
+    // 然后设置文本
+    lv_label_set_text(ui.imu.labelData, buffer);
 }
 
 void SystemInfosView::SetRTC(
@@ -381,15 +404,34 @@ void SystemInfosView::SetBattery(
     const char* state
 )
 {
-    lv_label_set_text_fmt(
-        ui.battery.labelData,
-        "%d%%\n"
-        "%0.2fV\n"
-        "%s",
-        usage,
-        voltage,
-        state
-    );
+    // PM_LOG_INFO("SetBattery params: usage=%d, voltage=%.2f, state=%s", 
+    //             usage, voltage, state ? state : "NULL");
+    // lv_label_set_text_fmt(
+    //     ui.battery.labelData,
+    //     "%d%%\n"
+    //     "%0.2fV\n"
+    //     "%s",
+    //     10,
+    //     3.8f,
+    //     "state"
+    // );
+
+        // 使用静态缓冲区
+    static char buffer[64];
+    
+    if (state == nullptr) {
+        state = "N/A";
+    }
+    
+    //usage = CLAMP(usage, 0, 100);
+    
+    // 先格式化到缓冲区
+    snprintf(buffer, sizeof(buffer),
+        "%d%%\n%0.2fV\n%s",
+        usage, voltage, state);
+    
+    // 然后设置文本
+    lv_label_set_text(ui.battery.labelData, buffer);
 }
 
 void SystemInfosView::SetStorage(

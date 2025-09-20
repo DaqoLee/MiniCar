@@ -59,6 +59,11 @@ int I2C_Scan();
 bool IMU_Init();
 void IMU_SetCommitCallback(CommitFunc_t func, void* userData);
 void IMU_Update();
+
+/* IMU */
+void Joystick_Init();
+void Joystick_SetCommitCallback(CommitFunc_t func, void* userData);
+void Joystick_Update();
     
 /* MAG */
 bool MAG_Init();

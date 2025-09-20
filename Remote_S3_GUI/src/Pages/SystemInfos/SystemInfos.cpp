@@ -1,9 +1,9 @@
 #include "SystemInfos.h"
 #include "Version.h"
-
+#include "Utils/PageManager/PM_Log.h"
 using namespace Page;
 
-SystemInfos::SystemInfos()
+SystemInfos::SystemInfos():lastFocus(nullptr)
 {
 }
 
@@ -22,6 +22,7 @@ void SystemInfos::onViewLoad()
     Model.Init();
     View.Create(_root);
     AttachEvent(_root);
+    lastFocus = nullptr;
 
     SystemInfosView::item_t* item_grp = ((SystemInfosView::item_t*)&View.ui);
 
@@ -38,9 +39,9 @@ void SystemInfos::onViewDidLoad()
 
 void SystemInfos::onViewWillAppear()
 {
+ 
     Model.SetStatusBarStyle(DataProc::STATUS_BAR_STYLE_BLACK);
-
-    timer = lv_timer_create(onTimerUpdate, 1000, this);
+    timer = lv_timer_create(onTimerUpdate, 100, this);
     lv_timer_ready(timer);
 
     View.SetScrollToY(_root, -LV_VER_RES, LV_ANIM_OFF);
@@ -51,12 +52,35 @@ void SystemInfos::onViewWillAppear()
 void SystemInfos::onViewDidAppear()
 {
     lv_group_t* group = lv_group_get_default();
+    lv_group_set_wrap(group, true);
     LV_ASSERT_NULL(group);
+
+    // 确保SystemInfos页面的对象重新添加到焦点组
+    SystemInfosView::item_t* item_grp = ((SystemInfosView::item_t*)&View.ui);
+    for (int i = 0; i < sizeof(View.ui) / sizeof(SystemInfosView::item_t); i++)
+    {
+        lv_group_add_obj(group, item_grp[i].icon);
+    }
+    if (lastFocus)
+    {
+        lv_group_focus_obj(lastFocus);
+    }
+    else
+    {
+        // 设置焦点到第一个项目
+        lv_group_focus_obj(item_grp[0].icon);
+    }
+    
+    // 确保焦点组的包装模式正确
+    
     View.onFocus(group);
 }
 
 void SystemInfos::onViewWillDisappear()
 {
+    lv_group_t* group = lv_group_get_default();
+    LV_ASSERT_NULL(group);
+    lastFocus = lv_group_get_focused(group);
     lv_obj_fade_out(_root, 300, 0);
 }
 
@@ -89,7 +113,7 @@ void SystemInfos::Update()
     float trip;
     float maxSpd;
     Model.GetSportInfo(&trip, buf, sizeof(buf), &maxSpd);
-    View.SetSport(trip, buf, maxSpd);
+    // View.SetSport(trip, buf, maxSpd);
 
     /* GPS */
     float lat;
@@ -98,7 +122,7 @@ void SystemInfos::Update()
     float course;
     float speed;
     Model.GetGPSInfo(&lat, &lng, &alt, buf, sizeof(buf), &course, &speed);
-    View.SetGPS(lat, lng, alt, buf, course, speed);
+    // View.SetGPS(lat, lng, alt, buf, course, speed);
 
     /* MAG */
     float dir;
@@ -106,7 +130,7 @@ void SystemInfos::Update()
     int y;
     int z;
     Model.GetMAGInfo(&dir, &x, &y, &z);
-    View.SetMAG(dir, x, y, z);
+    // View.SetMAG(dir, x, y, z);
 
     /* IMU */
     int steps;
@@ -115,7 +139,7 @@ void SystemInfos::Update()
 
     /* RTC */
     Model.GetRTCInfo(buf, sizeof(buf));
-    View.SetRTC(buf);
+    // View.SetRTC(buf);
 
     /* Power */
     int usage;
@@ -153,6 +177,18 @@ void SystemInfos::onTimerUpdate(lv_timer_t* timer)
     instance->Update();
 }
 
+void SystemInfos::onBtnClicked(lv_obj_t* btn)
+{
+    if (btn == View.ui.mag.icon)
+    {
+        _Manager->Push("Pages/Pair");
+    }
+    else if (btn == View.ui.sport.icon)
+    {
+        // _Manager->Push("Pages/Home");
+        _Manager->Pop();
+    }
+}
 void SystemInfos::onEvent(lv_event_t* event)
 {
     SystemInfos* instance = (SystemInfos*)lv_event_get_user_data(event);
@@ -163,17 +199,22 @@ void SystemInfos::onEvent(lv_event_t* event)
 
     if (code == LV_EVENT_PRESSED)
     {
-        if (lv_obj_has_state(obj, LV_STATE_FOCUSED))
-        {
-            instance->_Manager->Pop();
-        }
+        instance->onBtnClicked(obj);
     }
 
-    if (obj == instance->_root)
-    {
-        if (code == LV_EVENT_LEAVE)
-        {
-            instance->_Manager->Pop();
-        }
-    }
+    // if (code == LV_EVENT_PRESSED)
+    // {
+    //     if (lv_obj_has_state(obj, LV_STATE_FOCUSED))
+    //     {
+    //         instance->_Manager->Pop();
+    //     }
+    // }
+
+    // if (obj == instance->_root)
+    // {
+    //     if (code == LV_EVENT_LEAVE)
+    //     {
+    //         instance->_Manager->Pop();
+    //     }
+    // }
 }

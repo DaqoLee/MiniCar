@@ -83,10 +83,13 @@ void App_Init()
     /* Set root default style */
     static lv_style_t rootStyle;
     lv_style_init(&rootStyle);
+    
     lv_style_set_width(&rootStyle, LV_HOR_RES);
     lv_style_set_height(&rootStyle, LV_VER_RES);
     lv_style_set_bg_opa(&rootStyle, LV_OPA_COVER);
     lv_style_set_bg_color(&rootStyle, lv_color_black());
+    lv_style_set_pad_all(&rootStyle, 0);
+    lv_style_set_border_width(&rootStyle, 0);
     manager.SetRootDefaultStyle(&rootStyle);
 
     /* Initialize resource pool */
@@ -99,6 +102,8 @@ void App_Init()
     manager.Install("Template",    "Pages/_Template");
     manager.Install("LiveMap",     "Pages/LiveMap");
     manager.Install("Dialplate",   "Pages/Dialplate");
+    manager.Install("Home",   "Pages/Home");
+    manager.Install("Pair",   "Pages/Pair");
     manager.Install("SystemInfos", "Pages/SystemInfos");
     manager.Install("Startup",     "Pages/Startup");
 

@@ -141,6 +141,13 @@ typedef struct
     bool isActive;
 } TrackFilter_Info_t;
 
+
+typedef struct
+{
+   uint8_t mac[6];
+   char name[32]; 
+} Pair_Info_t;
+
 }
 
 #endif

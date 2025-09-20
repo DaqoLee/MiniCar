@@ -23,7 +23,7 @@ do{\
         IMPORT_FONT(bahnschrift_13);
         IMPORT_FONT(bahnschrift_17);
         IMPORT_FONT(bahnschrift_32);
-        IMPORT_FONT(bahnschrift_65);
+        IMPORT_FONT(bahnschrift_65);//lv_font_montserrat_20
         IMPORT_FONT(agencyb_36);
 
         /* Import Images */
@@ -49,6 +49,10 @@ do{\
         IMPORT_IMG(system_info);
         IMPORT_IMG(time_info);
         IMPORT_IMG(trip);
+        IMPORT_IMG(home);
+        IMPORT_IMG(device);
+        IMPORT_IMG(pair);
+        IMPORT_IMG(calibrate);
     }
 
 } /* extern "C" */
