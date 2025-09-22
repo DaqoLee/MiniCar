@@ -16,6 +16,9 @@ void SystemInfosModel::Init()
     account->Subscribe("Power");
     account->Subscribe("Storage");
     account->Subscribe("StatusBar");
+    account->Subscribe("Remote");
+
+    SetRemoteMode(DataProc::OperationMode_t::MODE_OTA);
 }
 
 void SystemInfosModel::Deinit()
@@ -180,4 +183,14 @@ void SystemInfosModel::SetStatusBarStyle(DataProc::StatusBar_Style_t style)
     info.param.style = style;
 
     account->Notify("StatusBar", &info, sizeof(info));
+}
+
+void SystemInfosModel::SetRemoteMode(DataProc::OperationMode_t mode)
+{
+    DataProc::Remote_Info_t info;
+    DATA_PROC_INIT_STRUCT(info);
+
+    info.mode = mode;
+   
+    account->Notify("Remote", &info, sizeof(info));
 }

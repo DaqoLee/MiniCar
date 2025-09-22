@@ -44,7 +44,7 @@ void Home::onViewWillAppear()
     lv_group_add_obj(group, View.ui.bottomInfo.cont);
 
     Model.SetStatusBarStyle(DataProc::STATUS_BAR_STYLE_TRANSP);
-
+    Model.SetRemoteMode(DataProc::OperationMode_t::MODE_JOYSTICK);
     Update();
 
     View.AppearAnimStart();

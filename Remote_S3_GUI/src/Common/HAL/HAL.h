@@ -122,6 +122,14 @@ void Audio_Init();
 void Audio_Update();
 bool Audio_PlayMusic(const char* name);
 
+/* Remote */
+void Remote_Init();
+void Remote_Update();
+void Remote_SetMode(OperationMode_t mode);
+void loadPairedDevices();
+void listPairedDevices();
+void savePairedDevices();
+
 /* Memory */
 void Memory_DumpInfo();
 

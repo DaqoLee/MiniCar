@@ -11,7 +11,10 @@ void PairModel::Init()
     account->Subscribe("GPS");
     account->Subscribe("MusicPlayer");
     account->Subscribe("Joystick");
+    account->Subscribe("Remote");
     account->SetEventCallback(onEvent);
+
+    SetRemoteMode(DataProc::OperationMode_t::MODE_PAIR);
 }
 
 void PairModel::Deinit()
@@ -124,4 +127,14 @@ void PairModel::SetStatusBarStyle(DataProc::StatusBar_Style_t style)
     info.param.style = style;
 
     account->Notify("StatusBar", &info, sizeof(info));
+}
+
+void PairModel::SetRemoteMode(DataProc::OperationMode_t mode)
+{
+    DataProc::Remote_Info_t info;
+    DATA_PROC_INIT_STRUCT(info);
+
+    info.mode = mode;
+   
+    account->Notify("Remote", &info, sizeof(info));
 }

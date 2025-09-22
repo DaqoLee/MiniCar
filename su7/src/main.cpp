@@ -270,119 +270,125 @@ void onDataRecv(const uint8_t *mac, const uint8_t *data, int len) {
   // if(currentMode != MODE_JOYSTICK) return;
   switch (currentMode)
   {
-  case MODE_JOYSTICK:
-  {
-    static uint16_t count = 200;
-    memcpy(&rxData, data, sizeof(rxData));
-    int servoAngle = map(rxData.joy1Y, 0, 4095, servoMin, servoMax);
-    myservo.writeMicroseconds(servoAngle); 
-    int motorSpeed = map(rxData.joy2X, 0, 4095, 255, -255);
-    setMotorSpeed(motorSpeed);
-    
-    // Serial.print("angle:");
-    // Serial.print(servoAngle);
-    // Serial.print(" speed:");
-    // Serial.println(motorSpeed);
-
-    if (count++ >= 200)
+    case MODE_JOYSTICK:
     {
-        // 检查是否已经添加过此设备
-      if (esp_now_is_peer_exist(mac)) {
-        // 设备已存在，无需再次添加
-      } else {
-        esp_now_peer_info_t peerInfo;
+      static uint16_t count = 200;
+      Serial.printf("rxData: %d,  len: %d \r\n",sizeof(rxData), len);
+      if ((sizeof(rxData) != len)){
+         myservo.writeMicroseconds(servoCenter); 
+         setMotorSpeed(0);
+        return;
+      }
+      memcpy(&rxData, data, sizeof(rxData));
+      int servoAngle = map(rxData.joy1Y, 0, 4095, servoMin, servoMax);
+      myservo.writeMicroseconds(servoAngle); 
+      int motorSpeed = map(rxData.joy2X, 0, 4095, 255, -255);
+      setMotorSpeed(motorSpeed);
+      
+      // Serial.print("angle:");
+      // Serial.print(servoAngle);
+      // Serial.print(" speed:");
+      // Serial.println(motorSpeed);
+
+      if (count++ >= 200)
+      {
+          // 检查是否已经添加过此设备
+        if (esp_now_is_peer_exist(mac)) {
+          // 设备已存在，无需再次添加
+        } else {
+          esp_now_peer_info_t peerInfo;
+          memcpy(peerInfo.peer_addr, mac, 6);
+          peerInfo.channel = 0;
+          peerInfo.encrypt = false;
+          peerInfo.ifidx = WIFI_IF_STA;//老版本没有
+          if (esp_now_add_peer(&peerInfo) != ESP_OK) {
+            Serial.println("Error initializing ESP-NOW");
+          // return;
+          }
+          Serial.println("New peer added successfully");
+        }
+        ackData.mode = currentMode;
+        ackData.battery = batteryPercentage;
+        esp_err_t result = esp_now_send(mac, (uint8_t *) &ackData, sizeof(ackData));
+
+        if (result == ESP_OK) {
+          Serial.println("ACK sent successfully");
+        } else {
+          Serial.println("Error sending ACK");
+        }
+        count = 0;
+      }
+      
+      break;
+    }
+    case MODE_PAIR:
+    {
+      // memcpy(&controllerMac, mac, sizeof(controllerMac)); // 保存发送端的MAC
+      // Serial.print("Bytes received: ");
+      // Serial.println(len);
+      Serial.printf("%02X:%02X:%02X:%02X:%02X:%02X\r\n",
+            mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+      message_t myData;
+      memcpy(&myData, data, sizeof(myData));
+
+      Serial.print("type: ");
+      Serial.println(myData.type);
+
+
+
+      bool isBroadcast = true;
+      // for (int i = 0; i < 6; i++) {
+      //   // Serial.print(mac[i]);
+      //   if (mac[i] != 0xFF) {
+      //     isBroadcast = false;
+      //     break;
+      //   }
+      //   Serial.println();
+      // }
+      Serial.println(isBroadcast);
+      Serial.println(strcmp(myData.type, "PAIRING"));
+
+      // 判断是否是配对请求
+      if (isBroadcast && (strcmp(myData.type, "PAIRING") == 0)) {
+
+        memcpy(controllerInfo.mac, mac, 6);
+            // 生成设备名称（使用MAC地址后4位）
+        String macAddress = WiFi.macAddress();
+        String devName = "ESP_Device_" + macAddress.substring(12, 14) + macAddress.substring(15, 17);
+        strncpy(controllerInfo.name, devName.c_str(), sizeof(controllerInfo.name) - 1);
+        controllerInfo.name[sizeof(controllerInfo.name) - 1] = '\0';
+        Serial.println(controllerInfo.name);
+        // 准备一个配对响应消息
+        // 获取本设备的MAC地址并填入结构体
+        // WiFi.macAddress(response.mac);
+
+        // 将之前保存的“控制器”MAC地址添加为对等设备
+        esp_now_peer_info_t peerInfo = {};
         memcpy(peerInfo.peer_addr, mac, 6);
         peerInfo.channel = 0;
         peerInfo.encrypt = false;
-        peerInfo.ifidx = WIFI_IF_STA;//老版本没有
-        if (esp_now_add_peer(&peerInfo) != ESP_OK) {
-          Serial.println("Error initializing ESP-NOW");
-        // return;
+        peerInfo.ifidx = WIFI_IF_STA;
+        esp_now_add_peer(&peerInfo);
+
+        message_t response;
+        strcpy(response.type, "PAIRING_RESP");
+        strncpy((char*)response.data, controllerInfo.name, sizeof(response.data) - 1);
+        response.data_len = strlen(controllerInfo.name);
+        
+        esp_err_t result = esp_now_send(controllerInfo.mac, (uint8_t *) &response, sizeof(response));
+        
+        if (result == ESP_OK) {
+          Serial.println("配对响应已发送");
+        } else {
+          Serial.println("发送配对响应失败");
         }
-        Serial.println("New peer added successfully");
       }
-      ackData.mode = currentMode;
-      ackData.battery = batteryPercentage;
-      esp_err_t result = esp_now_send(mac, (uint8_t *) &ackData, sizeof(ackData));
-
-      if (result == ESP_OK) {
-        Serial.println("ACK sent successfully");
-      } else {
-        Serial.println("Error sending ACK");
+      else if (isBroadcast && (sizeof(rxData) == len))
+      {
+        switchMode(MODE_JOYSTICK);
       }
-      count = 0;
+      break;  
     }
-    
-    break;
-  }
-  case MODE_PAIR:
-  {
-    // memcpy(&controllerMac, mac, sizeof(controllerMac)); // 保存发送端的MAC
-    // Serial.print("Bytes received: ");
-    // Serial.println(len);
-    Serial.printf("%02X:%02X:%02X:%02X:%02X:%02X\r\n",
-           mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
-    message_t myData;
-    memcpy(&myData, data, sizeof(myData));
-
-    Serial.print("type: ");
-    Serial.println(myData.type);
-
-
-
-    bool isBroadcast = true;
-    // for (int i = 0; i < 6; i++) {
-    //   // Serial.print(mac[i]);
-    //   if (mac[i] != 0xFF) {
-    //     isBroadcast = false;
-    //     break;
-    //   }
-    //   Serial.println();
-    // }
-    Serial.println(isBroadcast);
-    Serial.println(strcmp(myData.type, "PAIRING"));
-
-    // 判断是否是配对请求
-    if (isBroadcast && (strcmp(myData.type, "PAIRING") == 0)) {
-
-      memcpy(controllerInfo.mac, mac, 6);
-          // 生成设备名称（使用MAC地址后4位）
-      String macAddress = WiFi.macAddress();
-      String devName = "ESP_Device_" + macAddress.substring(12, 14) + macAddress.substring(15, 17);
-      strncpy(controllerInfo.name, devName.c_str(), sizeof(controllerInfo.name) - 1);
-      controllerInfo.name[sizeof(controllerInfo.name) - 1] = '\0';
-      Serial.println(controllerInfo.name);
-      // 准备一个配对响应消息
-      // 获取本设备的MAC地址并填入结构体
-      // WiFi.macAddress(response.mac);
-
-      // 将之前保存的“控制器”MAC地址添加为对等设备
-      esp_now_peer_info_t peerInfo = {};
-      memcpy(peerInfo.peer_addr, mac, 6);
-      peerInfo.channel = 0;
-      peerInfo.encrypt = false;
-      peerInfo.ifidx = WIFI_IF_STA;
-      esp_now_add_peer(&peerInfo);
-
-      message_t response;
-      strcpy(response.type, "PAIRING_RESP");
-      strncpy((char*)response.data, controllerInfo.name, sizeof(response.data) - 1);
-      response.data_len = strlen(controllerInfo.name);
-      
-      esp_err_t result = esp_now_send(controllerInfo.mac, (uint8_t *) &response, sizeof(response));
-      
-      if (result == ESP_OK) {
-        Serial.println("配对响应已发送");
-      } else {
-        Serial.println("发送配对响应失败");
-      }
-    }
-    else if (isBroadcast && (sizeof(rxData) == len))
-    {
-      switchMode(MODE_JOYSTICK);
-    }
-    break;  
-  }
    
   // default:
   //   return;

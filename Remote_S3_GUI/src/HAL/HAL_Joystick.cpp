@@ -32,6 +32,7 @@
 #define MAX_VALUE 100
 #define MIN_VALUE 0
 
+HAL::Joystick_Info_t joystick;
 
 static HAL::CommitFunc_t CommitFunc;
 static void* UserData;
@@ -59,22 +60,22 @@ void HAL::Joystick_Update()
         steps = 0;
     }
 
-    Joystick_Info_t joystick;
 
-    // uint16_t joy1Y = analogRead(JOY1_Y);
-    // uint16_t joy2Y = analogRead(JOY2_Y);
-    // uint16_t joy1X = analogRead(JOY1_X);
-    // uint16_t joy2X = analogRead(JOY2_X);
 
-    // joystick.x1 = map(joy1X, MIN_JOY1_X, MAX_JOY1_X, 0, 4095);
-    // joystick.y1 = map(joy1Y, MIN_JOY1_Y, MAX_JOY1_Y, 4095, 0);
-    // joystick.x2 = map(joy2X, MIN_JOY2_X, MAX_JOY2_X, 4095, 0);
-    // joystick.y2 = map(joy2Y, MIN_JOY2_Y, MAX_JOY2_Y, 4095, 0);
+    uint16_t joy1Y = analogRead(JOY1_Y);
+    uint16_t joy2Y = analogRead(JOY2_Y);
+    uint16_t joy1X = analogRead(JOY1_X);
+    uint16_t joy2X = analogRead(JOY2_X);
 
-    joystick.x1 = analogRead(JOY1_Y);
-    joystick.y1 = analogRead(JOY2_Y);
-    joystick.x2 = analogRead(JOY1_X);
-    joystick.y2 = analogRead(JOY2_X);
+    joystick.x1 = map(joy1X, MIN_JOY1_X, MAX_JOY1_X, 0, 4095);
+    joystick.y1 = map(joy1Y, MIN_JOY1_Y, MAX_JOY1_Y, 4095, 0);
+    joystick.x2 = map(joy2X, MIN_JOY2_X, MAX_JOY2_X, 4095, 0);
+    joystick.y2 = map(joy2Y, MIN_JOY2_Y, MAX_JOY2_Y, 4095, 0);
+
+    // joystick.x1 = analogRead(JOY1_Y);
+    // joystick.y1 = analogRead(JOY2_Y);
+    // joystick.x2 = analogRead(JOY1_X);
+    // joystick.y2 = analogRead(JOY2_X);
 
 
     if (CommitFunc)

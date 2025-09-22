@@ -15,3 +15,5 @@ DP_DEF(TzConv, 0);
 DP_DEF(SysConfig, 0);
 DP_DEF(TrackFilter, 0);
 DP_DEF(Pair, sizeof(DataProc::Pair_Info_t));
+DP_DEF(Remote, 0);
+

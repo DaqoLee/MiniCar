@@ -41,6 +41,7 @@ void SystemInfos::onViewWillAppear()
 {
  
     Model.SetStatusBarStyle(DataProc::STATUS_BAR_STYLE_BLACK);
+    Model.SetRemoteMode(DataProc::OperationMode_t::MODE_OTA);
     timer = lv_timer_create(onTimerUpdate, 100, this);
     lv_timer_ready(timer);
 

@@ -950,6 +950,12 @@ static void keypad_read(lv_indev_t * indev_drv, lv_indev_data_t * data)
 #include "Resource/ResourcePool.h"
 #include "main.h"
 #include "HAL/HAL.h"
+
+#include <esp_now.h>
+#include <WiFi.h>
+#include "esp_wifi.h"
+#include <FastLED.h>
+#include <Preferences.h>
 /*To use the built-in examples and demos of LVGL uncomment the includes below respectively.
  *You also need to copy `lvgl/examples` to `lvgl/src/examples`. Similarly for the demos `lvgl/demos` to `lvgl/src/demos`.
  Note that the `lv_examples` library is for LVGL v7 and you shouldn't install it for this version (since LVGL v8)
@@ -959,7 +965,7 @@ static void keypad_read(lv_indev_t * indev_drv, lv_indev_data_t * data)
 
 static const uint16_t screenWidth  = 240;
 static const uint16_t screenHeight = 240;
-#define SCREEN_BUFFER_SIZE (screenWidth * screenHeight)
+#define SCREEN_BUFFER_SIZE ((screenWidth * screenHeight)/2)
 
 TFT_eSPI tft = TFT_eSPI(); /* TFT instance */
 
@@ -1034,84 +1040,43 @@ void PowerTask(void *pvParameters) {
 
 void setup()
 {
-    Serial.begin( 115200 ); /* prepare for possible serial debug */
+  Serial.begin( 115200 ); /* prepare for possible serial debug */
 
-    String LVGL_Arduino = "Hello Arduino! ";
-    LVGL_Arduino += String('V') + lv_version_major() + "." + lv_version_minor() + "." + lv_version_patch();
+  String LVGL_Arduino = "Hello Arduino! ";
+  LVGL_Arduino += String('V') + lv_version_major() + "." + lv_version_minor() + "." + lv_version_patch();
 
-    Serial.println( LVGL_Arduino );
-    Serial.println( "I am LVGL_Arduino" );
+  Serial.println( LVGL_Arduino );
+  Serial.println( "I am LVGL_Arduino" );
 
+  Serial.begin(115200);
 
-
-    lv_init();
+  lv_init();
    
-#if LV_USE_LOG != 0
-    lv_log_register_print_cb( my_print ); /* register print function for debugging */
-#endif
+  tft.begin();
+  tft.setRotation(2);
+  tft.fillScreen(TFT_BLACK);
 
-    // tft.begin();          /* TFT init */
-    // tft.setRotation( 0 ); /* Landscape orientation, flipped */
-    
-    tft.begin();
-    tft.setRotation(2);
-    tft.fillScreen(TFT_BLACK);
-    // tft.setSwapBytes(true); 
-    /*Set the touchscreen calibration data,
-     the actual data for your display can be acquired using
-     the Generic -> Touch_calibrate example from the TFT_eSPI library*/
-    // uint16_t calData[5] = { 275, 3620, 264, 3532, 1 };
-    // tft.setTouch( calData );
+  static lv_color_t lv_disp_buf1[SCREEN_BUFFER_SIZE];
+  static lv_color_t lv_disp_buf2[SCREEN_BUFFER_SIZE];
 
-  
-#if 1
-    // lv_disp_draw_buf_init( &draw_buf, buf, buf1, screenWidth * screenHeight / 10 );
+  static lv_disp_draw_buf_t disp_buf;
+  lv_disp_draw_buf_init(&disp_buf, lv_disp_buf1, lv_disp_buf2, SCREEN_BUFFER_SIZE);
 
-    // /*Initialize the display*/
-    // static lv_disp_drv_t disp_drv;
-    // lv_disp_drv_init( &disp_drv );
-    // /*Change the following line to your display resolution*/
-    // disp_drv.hor_res = screenWidth;
-    // disp_drv.ver_res = screenHeight;
-    // disp_drv.flush_cb = my_disp_flush;
-    // disp_drv.draw_buf = &draw_buf;
-    // lv_disp_drv_register( &disp_drv );
+  /*Initialize the display*/
+  static lv_disp_drv_t disp_drv;
+  lv_disp_drv_init(&disp_drv);
+  disp_drv.hor_res = screenWidth;
+  disp_drv.ver_res = screenHeight;
+  disp_drv.flush_cb = my_disp_flush;
+  disp_drv.wait_cb = disp_wait_cb;
+  disp_drv.draw_buf = &disp_buf;
+  lv_disp_drv_register(&disp_drv);
 
+  HAL::HAL_Init();
+  lv_port_indev_init();
+  App_Init();
 
-    static lv_color_t lv_disp_buf1[SCREEN_BUFFER_SIZE];
-    static lv_color_t lv_disp_buf2[SCREEN_BUFFER_SIZE];
-
-    static lv_disp_draw_buf_t disp_buf;
-    lv_disp_draw_buf_init(&disp_buf, lv_disp_buf1, lv_disp_buf2, SCREEN_BUFFER_SIZE);
-
-    /*Initialize the display*/
-    static lv_disp_drv_t disp_drv;
-    lv_disp_drv_init(&disp_drv);
-    disp_drv.hor_res = screenWidth;
-    disp_drv.ver_res = screenHeight;
-    disp_drv.flush_cb = my_disp_flush;
-    disp_drv.wait_cb = disp_wait_cb;
-    disp_drv.draw_buf = &disp_buf;
-    lv_disp_drv_register(&disp_drv);
-
-    /*Initialize the (dummy) input device driver*/
-    // static lv_indev_drv_t indev_drv;
-    // lv_indev_drv_init( &indev_drv );
-    // indev_drv.type = LV_INDEV_TYPE_POINTER;
-    // indev_drv.read_cb = my_touchpad_read;
-    // lv_indev_drv_register( &indev_drv );
-  
-    /* Create simple label */
-    // lv_obj_t *label = lv_label_create( lv_scr_act() );
-    // lv_label_set_text( label, "Hello Arduino and LVGL!");
-    // lv_obj_align( label, LV_ALIGN_CENTER, 0, 0 );
-
-#endif
-   HAL::HAL_Init();
-   lv_port_indev_init();
-   App_Init();
-
-   xTaskCreate(PowerTask, "PowerTask", 4096, NULL, 1, NULL);
+  xTaskCreate(PowerTask, "PowerTask", 4096, NULL, 1, NULL);
 
   Serial.println( "Setup done" );
 }
@@ -1119,10 +1084,8 @@ void setup()
 void loop()
 {
    
-    lv_timer_handler(); /* let the GUI do its work */
-    HAL::Joystick_Update();
-    // Serial.printf("d: %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f\n",10.1f,11.1f,12.1f,13.1f,14.1f,15.1f,16.1f,12.1f,13.1f,14.1f,15.1f,16.1f);
-    delay( 5 );
+  lv_timer_handler(); /* let the GUI do its work */
+  delay( 5 );
 }
 
 void keypad_init()
@@ -1225,176 +1188,5 @@ void lv_port_indev_init(void)
      * `lv_indev_set_group(indev_encoder, group);` */
 }
 
-
-#endif
-
-#if 0
-#include <lvgl.h>
-#include <TFT_eSPI.h>
-#include "App.h"
-#include "Pages/StartUp/StartUpView.h"
-#include "Version.h"
-#include "Resource/ResourcePool.h"
-
-/*屏幕分辨率*/
-static const uint16_t screenWidth  = 240;
-static const uint16_t screenHeight = 240;
-
-static lv_disp_draw_buf_t draw_buf;
-static lv_color_t buf[ screenWidth * screenHeight / 10 ];
-static lv_color_t buf1[ screenWidth * screenHeight / 10 ];
-TFT_eSPI tft = TFT_eSPI(screenWidth, screenHeight); /* TFT实例 */
-
-#if LV_USE_LOG != 0
-/* 串口调试 */
-void my_print(const char * buf)
-{
-    Serial.printf(buf);
-    Serial.flush();
-}
-#endif
-
-/* 显示屏刷新 */
-void my_disp_flush( lv_disp_drv_t *disp_drv, const lv_area_t *area, lv_color_t *color_p )
-{
-    uint32_t w = ( area->x2 - area->x1 + 1 );
-    uint32_t h = ( area->y2 - area->y1 + 1 );
-
-    tft.startWrite();
-    tft.setAddrWindow( area->x1, area->y1, w, h );
-    tft.pushColors( ( uint16_t * )&color_p->full, w * h, true );
-    tft.endWrite();
-
-    lv_disp_flush_ready( disp_drv );
-}
-
-/*读取触摸板*/
-void my_touchpad_read( lv_indev_drv_t * indev_drv, lv_indev_data_t * data )
-{
-    uint16_t touchX, touchY;
-
-    // bool touched = tft.getTouch( &touchX, &touchY, 600 );
-
-    // if( !touched )
-    // {
-    //     data->state = LV_INDEV_STATE_REL;
-    // }
-    // else
-    // {
-    //     data->state = LV_INDEV_STATE_PR;
-
-    //     /*设置坐标*/
-    //     data->point.x = touchX;
-    //     data->point.y = touchY;
-    // }
-}
-
-void setup()
-{
-    Serial.begin( 115200 ); /* 准备串口调试 */
-
-    String LVGL_Arduino = "Hello Arduino! ";
-    LVGL_Arduino += String('V') + lv_version_major() + "." + lv_version_minor() + "." + lv_version_patch();
-
-    Serial.println( LVGL_Arduino );
-    Serial.println( "I am LVGL_Arduino" );
-
-    lv_init();
-
-#if LV_USE_LOG != 0
-    lv_log_register_print_cb( my_print ); /* 注册打印函数用于调试 */
-#endif
-
-    tft.begin();
-    tft.setRotation(2);
-    tft.fillScreen(TFT_BLACK);
-    tft.setSwapBytes(true); 
-  
-    // 初始化显示缓冲区
-    lv_disp_draw_buf_init( &draw_buf, buf, buf1, screenWidth * screenHeight / 10 );
-
-    /*初始化显示器*/
-    static lv_disp_drv_t disp_drv;
-    lv_disp_drv_init( &disp_drv );
-    disp_drv.hor_res = screenWidth;
-    disp_drv.ver_res = screenHeight;
-    disp_drv.flush_cb = my_disp_flush;
-    disp_drv.draw_buf = &draw_buf;
-    lv_disp_drv_register( &disp_drv );
-
-#define COLOR_ORANGE    lv_color_hex(0xff931e)
-    
-    /*初始化输入设备驱动*/
-    static lv_indev_drv_t indev_drv;
-    lv_indev_drv_init( &indev_drv );
-    indev_drv.type = LV_INDEV_TYPE_POINTER;
-    indev_drv.read_cb = my_touchpad_read;
-    lv_indev_drv_register( &indev_drv );
-  
-    // 配置屏幕
-    lv_obj_t* scr = lv_scr_act();
-    lv_obj_remove_style_all(scr);
-    lv_obj_set_style_bg_opa(scr, LV_OPA_COVER, 0);
-    lv_obj_set_style_bg_color(scr, lv_color_black(), 0);
-    lv_obj_clear_flag(scr, LV_OBJ_FLAG_SCROLLABLE);
-
-    // 创建容器
-    lv_obj_t* cont = lv_obj_create(scr);
-    lv_obj_remove_style_all(cont);
-    lv_obj_clear_flag(cont, LV_OBJ_FLAG_SCROLLABLE);
-    lv_obj_set_size(cont, 200, 50);
-    lv_obj_set_style_border_color(cont, COLOR_ORANGE, 0);
-    lv_obj_set_style_border_side(cont, LV_BORDER_SIDE_BOTTOM, 0);
-    lv_obj_set_style_border_width(cont, 3, 0);
-    lv_obj_set_style_border_post(cont, true, 0);
-    lv_obj_center(cont); // 将容器居中
-    
-    // 在容器中添加标签
-    lv_obj_t* label = lv_label_create(cont);
-    lv_obj_set_style_text_color(label, lv_color_white(), 0);
-    lv_label_set_text(label, "LVGL Animation");
-    lv_obj_center(label);
-    
-    // 创建一个简单的上下移动动画
-    lv_anim_t a;
-    lv_anim_init(&a);
-    
-    // 设置动画目标
-    lv_anim_set_var(&a, cont);
-    
-    // 获取当前Y位置作为起始点
-    lv_coord_t start_y = lv_obj_get_y(cont);
-    
-    // 设置动画值：从当前位置向上移动50像素，再回来
-    lv_anim_set_values(&a, start_y, start_y - 50);
-    
-    // 动画持续时间
-    lv_anim_set_time(&a, 1000);
-    
-    // 设置动画执行函数（Y轴移动）
-    lv_anim_set_exec_cb(&a, (lv_anim_exec_xcb_t)lv_obj_set_y);
-    
-    // 设置动画曲线
-    lv_anim_set_path_cb(&a, lv_anim_path_ease_in_out);
-    
-    // 设置回放时间（返回的时间）
-    lv_anim_set_playback_time(&a, 1000);
-    
-    // 设置无限重复
-    lv_anim_set_repeat_count(&a, LV_ANIM_REPEAT_INFINITE);
-    
-    // 启动动画
-    lv_anim_start(&a);
-
-    Serial.println( "Setup done" );
-}
-
-void loop()
-{
-    lv_timer_handler(); /* 让GUI处理任务 */
-    delay( 5 );
-}
-
- 
 
 #endif

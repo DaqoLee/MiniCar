@@ -7,6 +7,7 @@ void HAL::HAL_Init()
     GPS_Init();
     Power_Init();
     Joystick_Init();
+    Remote_Init();
 }
 
 void HAL::HAL_Update()
@@ -15,5 +16,6 @@ void HAL::HAL_Update()
     MAG_Update();
     Audio_Update();
     Power_Update();
-    // Joystick_Update();
+    Joystick_Update();
+    Remote_Update();
 }

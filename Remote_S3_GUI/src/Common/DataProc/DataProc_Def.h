@@ -141,12 +141,22 @@ typedef struct
     bool isActive;
 } TrackFilter_Info_t;
 
-
+typedef enum  {
+  MODE_JOYSTICK,  // 摇杆控制模式
+  MODE_OTA,        // OTA更新模式
+  MODE_PAIR
+}OperationMode_t;
 typedef struct
 {
    uint8_t mac[6];
    char name[32]; 
 } Pair_Info_t;
+
+typedef struct
+{
+   OperationMode_t mode; 
+   
+} Remote_Info_t;
 
 }
 

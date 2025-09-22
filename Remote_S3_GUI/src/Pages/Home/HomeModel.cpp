@@ -1,7 +1,7 @@
 #include "HomeModel.h"
 
 using namespace Page;
-
+ static uint8_t Mac[] = {0x0C, 0x4E, 0xA0, 0x21, 0x29, 0x3C};
 void HomeModel::Init()
 {
     account = new Account("HomeModel", DataProc::Center(), 0, this);
@@ -11,7 +11,11 @@ void HomeModel::Init()
     account->Subscribe("GPS");
     account->Subscribe("MusicPlayer");
     account->Subscribe("Joystick");
+    account->Subscribe("Remote");
     account->SetEventCallback(onEvent);
+
+    SetRemoteMode(DataProc::OperationMode_t::MODE_JOYSTICK);
+
 }
 
 void HomeModel::Deinit()
@@ -35,11 +39,10 @@ bool HomeModel::GetGPSReady()
 
 void HomeModel::GetJoystickInfo(uint16_t data[4])
 {
-
+  
     HAL::Joystick_Info_t joystick = { 0 };
 
     account->Pull("Joystick", &joystick, sizeof(joystick));
-
     data[0] = joystick.x1;
     data[1] = joystick.y1;
     data[2] = joystick.x2;
@@ -124,4 +127,13 @@ void HomeModel::SetStatusBarStyle(DataProc::StatusBar_Style_t style)
     info.param.style = style;
 
     account->Notify("StatusBar", &info, sizeof(info));
+}
+void HomeModel::SetRemoteMode(DataProc::OperationMode_t mode)
+{
+    DataProc::Remote_Info_t info;
+    DATA_PROC_INIT_STRUCT(info);
+
+    info.mode = mode;
+   
+    account->Notify("Remote", &info, sizeof(info));
 }

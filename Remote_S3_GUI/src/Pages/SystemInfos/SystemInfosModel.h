@@ -56,7 +56,7 @@ public:
     );
 
     void SetStatusBarStyle(DataProc::StatusBar_Style_t style);
-
+    void SetRemoteMode(DataProc::OperationMode_t mode);
 private:
     Account* account;
 
