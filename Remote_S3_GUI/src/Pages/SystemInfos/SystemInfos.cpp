@@ -138,26 +138,12 @@ void SystemInfos::Update()
     Model.GetIMUInfo(&steps, buf, sizeof(buf));
     View.SetIMU(steps, buf);
 
-    /* RTC */
-    Model.GetRTCInfo(buf, sizeof(buf));
-    // View.SetRTC(buf);
-
     /* Power */
     int usage;
     float voltage;
     Model.GetBatteryInfo(&usage, &voltage, buf, sizeof(buf));
     View.SetBattery(usage, voltage, buf);
 
-    /* Storage */
-    bool detect;
-    const char* type = "-";
-    Model.GetStorageInfo(&detect, &type, buf, sizeof(buf));
-    View.SetStorage(
-        detect ? "OK" : "ERROR",
-        buf,
-        type,
-        VERSION_FILESYSTEM
-    );
 
     /* System */
     // DataProc::MakeTimeString(lv_tick_get(), buf, sizeof(buf));
@@ -180,15 +166,25 @@ void SystemInfos::onTimerUpdate(lv_timer_t* timer)
 
 void SystemInfos::onBtnClicked(lv_obj_t* btn)
 {
-    if (btn == View.ui.mag.icon)
+    if (btn == View.ui.pair.icon)
     {
         _Manager->Push("Pages/Pair");
     }
-    else if (btn == View.ui.sport.icon)
+    else if (btn == View.ui.home.icon)
     {
         // _Manager->Push("Pages/Home");
         _Manager->Pop();
     }
+    else if (btn == View.ui.calibrate.icon)
+    {
+        _Manager->Push("Pages/Calibrate");
+    }
+    else if (btn == View.ui.device.icon)
+    {
+        _Manager->Push("Pages/Device");
+    }    
+
+    
 }
 void SystemInfos::onEvent(lv_event_t* event)
 {

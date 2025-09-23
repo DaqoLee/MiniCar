@@ -28,6 +28,8 @@
 #include "StartUp/StartUp.h"
 #include "Home/Home.h"
 #include "Pair/Pair.h"
+#include "Calibrate/Calibrate.h"
+#include "Device/Device.h"
 #define APP_CLASS_MATCH(className)\
 do{\
     if (strcmp(name, #className) == 0)\
@@ -43,6 +45,8 @@ PageBase* AppFactory::CreatePage(const char* name)
     APP_CLASS_MATCH(Dialplate);
     APP_CLASS_MATCH(Home);
     APP_CLASS_MATCH(Pair);
+    APP_CLASS_MATCH(Calibrate);
+    APP_CLASS_MATCH(Device);
     APP_CLASS_MATCH(SystemInfos);
     APP_CLASS_MATCH(Startup);
 

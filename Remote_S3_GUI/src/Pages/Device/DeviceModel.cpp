@@ -1,10 +1,10 @@
-#include "PairModel.h"
+#include "DeviceModel.h"
 
 using namespace Page;
 
-void PairModel::Init()
+void DeviceModel::Init()
 {
-    account = new Account("PairModel", DataProc::Center(), 0, this);
+    account = new Account("DeviceModel", DataProc::Center(), 0, this);
     account->Subscribe("SportStatus");
     account->Subscribe("Recorder");
     account->Subscribe("StatusBar");
@@ -12,13 +12,13 @@ void PairModel::Init()
     account->Subscribe("MusicPlayer");
     account->Subscribe("Joystick");
     account->Subscribe("Remote");
-    account->Subscribe("Pair");
+    account->Subscribe("Device");
     account->SetEventCallback(onEvent);
 
-    SetRemoteMode(DataProc::OperationMode_t::MODE_PAIR);
+    // SetRemoteMode(DataProc::OperationMode_t::MODE_Device);
 }
 
-void PairModel::Deinit()
+void DeviceModel::Deinit()
 {
     if (account)
     {
@@ -27,7 +27,7 @@ void PairModel::Deinit()
     }
 }
 
-bool PairModel::GetGPSReady()
+bool DeviceModel::GetGPSReady()
 {
     HAL::GPS_Info_t gps;
     if(account->Pull("GPS", &gps, sizeof(gps)) != Account::RES_OK)
@@ -37,18 +37,18 @@ bool PairModel::GetGPSReady()
     return (gps.satellites > 0);
 }
 
-void PairModel::GetDeviceInfo(char name[32])
+void DeviceModel::GetDeviceInfo(char name[32])
 {
 
     HAL::device_info_t device_info = { 0 };
 
-    account->Pull("Pair", &device_info, sizeof(device_info));
+    account->Pull("Device", &device_info, sizeof(device_info));
 
     strncpy(name, device_info.name,15);
     name[16]= '\0';
 }
 
-int PairModel::onEvent(Account* account, Account::EventParam_t* param)
+int DeviceModel::onEvent(Account* account, Account::EventParam_t* param)
 {
     if (param->event != Account::EVENT_PUB_PUBLISH)
     {
@@ -61,13 +61,13 @@ int PairModel::onEvent(Account* account, Account::EventParam_t* param)
         return Account::RES_PARAM_ERROR;
     }
 
-    PairModel* instance = (PairModel*)account->UserData;
+    DeviceModel* instance = (DeviceModel*)account->UserData;
     memcpy(&(instance->sportStatusInfo), param->data_p, param->size);
 
     return Account::RES_OK;
 }
 
-void PairModel::RecorderCommand(RecCmd_t cmd)
+void DeviceModel::RecorderCommand(RecCmd_t cmd)
 {
     if (cmd != REC_READY_STOP)
     {
@@ -107,7 +107,7 @@ void PairModel::RecorderCommand(RecCmd_t cmd)
     account->Notify("StatusBar", &statInfo, sizeof(statInfo));
 }
 
-void PairModel::PlayMusic(const char* music)
+void DeviceModel::PlayMusic(const char* music)
 {
     DataProc::MusicPlayer_Info_t info;
     DATA_PROC_INIT_STRUCT(info);
@@ -116,7 +116,7 @@ void PairModel::PlayMusic(const char* music)
     account->Notify("MusicPlayer", &info, sizeof(info));
 }
 
-void PairModel::SetStatusBarStyle(DataProc::StatusBar_Style_t style)
+void DeviceModel::SetStatusBarStyle(DataProc::StatusBar_Style_t style)
 {
     DataProc::StatusBar_Info_t info;
     DATA_PROC_INIT_STRUCT(info);
@@ -127,7 +127,7 @@ void PairModel::SetStatusBarStyle(DataProc::StatusBar_Style_t style)
     account->Notify("StatusBar", &info, sizeof(info));
 }
 
-void PairModel::SetRemoteMode(DataProc::OperationMode_t mode)
+void DeviceModel::SetRemoteMode(DataProc::OperationMode_t mode)
 {
     DataProc::Remote_Info_t info;
     DATA_PROC_INIT_STRUCT(info);

@@ -23,13 +23,11 @@ public:
 
     struct
     {
-        item_t sport;
-        item_t gps;
-        item_t mag;
-        item_t imu;
-        item_t rtc;
+        item_t home;
+        item_t calibrate;
+        item_t pair;
+        item_t device;
         item_t battery;
-        item_t storage;
         item_t system;
     } ui;
 
@@ -64,12 +62,6 @@ public:
         int usage,
         float voltage,
         const char* state
-    );
-    void SetStorage(
-        const char* detect,
-        const char* size,
-        const char* type,
-        const char* version
     );
     void SetSystem(
         const char* firmVer,

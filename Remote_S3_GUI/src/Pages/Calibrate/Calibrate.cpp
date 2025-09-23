@@ -1,22 +1,22 @@
-#include "Pair.h"
+#include "Calibrate.h"
 using namespace Page;
 
-Pair::Pair()
+Calibrate::Calibrate()
     : recState(RECORD_STATE_READY)
     , lastFocus(nullptr)
 {
 }
 
-Pair::~Pair()
+Calibrate::~Calibrate()
 {
 }
 
-void Pair::onCustomAttrConfig()
+void Calibrate::onCustomAttrConfig()
 {
     SetCustomLoadAnimType(PageManager::LOAD_ANIM_NONE);
 }
 
-void Pair::onViewLoad()
+void Calibrate::onViewLoad()
 {
     Model.Init();
     View.Create(_root);
@@ -27,12 +27,12 @@ void Pair::onViewLoad()
     // AttachEvent(View.ui.btnCont.btnMenu);
 }
 
-void Pair::onViewDidLoad()
+void Calibrate::onViewDidLoad()
 {
 
 }
 
-void Pair::onViewWillAppear()
+void Calibrate::onViewWillAppear()
 {
     lv_indev_wait_release(lv_indev_get_act());
     lv_group_t* group = lv_group_get_default();
@@ -59,12 +59,12 @@ void Pair::onViewWillAppear()
     View.AppearAnimStart();
 }
 
-void Pair::onViewDidAppear()
+void Calibrate::onViewDidAppear()
 {
     timer = lv_timer_create(onTimerUpdate, 100, this);
 }
 
-void Pair::onViewWillDisappear()
+void Calibrate::onViewWillDisappear()
 {
     lv_group_t* group = lv_group_get_default();
     LV_ASSERT_NULL(group);
@@ -75,28 +75,28 @@ void Pair::onViewWillDisappear()
     // View.AppearAnimStart(true);
 }
 
-void Pair::onViewDidDisappear()
+void Calibrate::onViewDidDisappear()
 {
 }
 
-void Pair::onViewUnload()
+void Calibrate::onViewUnload()
 {
     View.Delete();
     Model.Deinit();
    
 }
 
-void Pair::onViewDidUnload()
+void Calibrate::onViewDidUnload()
 {
 
 }
 
-void Pair::AttachEvent(lv_obj_t* obj)
+void Calibrate::AttachEvent(lv_obj_t* obj)
 {
     lv_obj_add_event_cb(obj, onEvent, LV_EVENT_ALL, this);
 }
 
-void Pair::Update()
+void Calibrate::Update()
 {
 
     char name[32] = {0};
@@ -109,14 +109,14 @@ void Pair::Update()
     }
 }
 
-void Pair::onTimerUpdate(lv_timer_t* timer)
+void Calibrate::onTimerUpdate(lv_timer_t* timer)
 {
-    Pair* instance = (Pair*)timer->user_data;
+    Calibrate* instance = (Calibrate*)timer->user_data;
 
     instance->Update();
 }
 
-void Pair::onBtnClicked(lv_obj_t* btn)
+void Calibrate::onBtnClicked(lv_obj_t* btn)
 {
     // if (btn == View.ui.btnCont.btnMap)
     // {
@@ -128,7 +128,7 @@ void Pair::onBtnClicked(lv_obj_t* btn)
     }
 }
 
-void Pair::onRecord(bool longPress)
+void Calibrate::onRecord(bool longPress)
 {
     switch (recState)
     {
@@ -194,14 +194,14 @@ void Pair::onRecord(bool longPress)
     }
 }
 
-void Pair::SetBtnRecImgSrc(const char* srcName)
+void Calibrate::SetBtnRecImgSrc(const char* srcName)
 {
     lv_obj_set_style_bg_img_src(View.ui.btnCont.btnRec, ResourcePool::GetImage(srcName), 0);
 }
 
-void Pair::onEvent(lv_event_t* event)
+void Calibrate::onEvent(lv_event_t* event)
 {
-    Pair* instance = (Pair*)lv_event_get_user_data(event);
+    Calibrate* instance = (Calibrate*)lv_event_get_user_data(event);
     LV_ASSERT_NULL(instance);
 
     lv_obj_t* obj = lv_event_get_current_target(event);

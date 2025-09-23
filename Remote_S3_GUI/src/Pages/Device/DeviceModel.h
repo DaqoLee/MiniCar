@@ -1,12 +1,12 @@
-#ifndef __PAIR_MODEL_H
-#define __PAIR_MODEL_H
+#ifndef __Device_MODEL_H
+#define __Device_MODEL_H
 
 #include "Common/DataProc/DataProc.h"
 
 namespace Page
 {
 
-class PairModel
+class DeviceModel
 {
 public:
     typedef enum

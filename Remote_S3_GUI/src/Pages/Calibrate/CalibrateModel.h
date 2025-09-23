@@ -1,12 +1,12 @@
-#ifndef __PAIR_MODEL_H
-#define __PAIR_MODEL_H
+#ifndef __Calibrate_MODEL_H
+#define __Calibrate_MODEL_H
 
 #include "Common/DataProc/DataProc.h"
 
 namespace Page
 {
 
-class PairModel
+class CalibrateModel
 {
 public:
     typedef enum

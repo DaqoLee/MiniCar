@@ -41,7 +41,6 @@ using namespace HAL;
 // 定义最大设备数量
 #define MAX_DEVICES 10
 
-extern Joystick_Info_t joystick;
 uint8_t pairedCount = 0;
 uint8_t pairIndex = 0;
 bool isPaired = false;
@@ -58,6 +57,14 @@ struct_ack ackData;
 //     HAL::Buzz_Tone(freq);
 // }
 device_info_t pairedDevices[MAX_DEVICES];
+
+HAL::Joystick_Info_t joystick;
+
+static HAL::CommitFunc_t CommitFunc;
+static void* UserData;
+
+static HAL::CommitFunc_t PairCommitFunc;
+static void* PairData;
 
 void OnDataRecv(const uint8_t *mac, const uint8_t *incomingData, int len) ;
 
@@ -86,6 +93,61 @@ void HAL::Remote_SetMode(OperationMode_t mode)
     loadPairedDevices();
     listPairedDevices();
 }
+
+void HAL::Joystick_Init()
+{
+  pinMode(JOY1_X, INPUT);
+  pinMode(JOY1_Y, INPUT);
+  pinMode(JOY2_X, INPUT);
+  pinMode(JOY2_Y, INPUT);
+
+  analogReadResolution(12);
+}
+void HAL::Joystick_SetCommitCallback(CommitFunc_t func, void* userData)
+{
+    CommitFunc = func;
+    UserData = userData;
+}
+
+void HAL::Pair_SetCommitCallback(CommitFunc_t func, void* userData)
+{
+    PairCommitFunc = func;
+    PairData = userData;
+}
+
+
+void HAL::Joystick_Update()
+{
+    static int16_t steps;
+    steps++;
+    if (steps > 9999)
+    {
+        steps = 0;
+    }
+
+    uint16_t joy1Y = analogRead(JOY1_Y);
+    uint16_t joy2Y = analogRead(JOY2_Y);
+    uint16_t joy1X = analogRead(JOY1_X);
+    uint16_t joy2X = analogRead(JOY2_X);
+
+    joystick.x1 = map(joy1X, MIN_JOY1_X, MAX_JOY1_X, 0, 4095);
+    joystick.y1 = map(joy1Y, MIN_JOY1_Y, MAX_JOY1_Y, 4095, 0);
+    joystick.x2 = map(joy2X, MIN_JOY2_X, MAX_JOY2_X, 4095, 0);
+    joystick.y2 = map(joy2Y, MIN_JOY2_Y, MAX_JOY2_Y, 4095, 0);
+
+    // joystick.x1 = analogRead(JOY1_Y);
+    // joystick.y1 = analogRead(JOY2_Y);
+    // joystick.x2 = analogRead(JOY1_X);
+    // joystick.y2 = analogRead(JOY2_X);
+
+
+    if (CommitFunc)
+    {
+        CommitFunc(&joystick, UserData);
+    }
+}
+
+
 
 void HAL::Remote_Update()
 {
@@ -175,6 +237,10 @@ void OnDataRecv(const uint8_t *mac, const uint8_t *incomingData, int len) {
       for (int i = 0; i < pairedCount; i++) {
         if (memcmp(pairedDevices[i].mac, mac, 6) == 0) {
           exists = true;
+        if (PairCommitFunc)
+        {
+            PairCommitFunc(&pairedDevices[i], PairData);
+        }
           break;
         }
       }
@@ -191,8 +257,13 @@ void OnDataRecv(const uint8_t *mac, const uint8_t *incomingData, int len) {
           snprintf(pairedDevices[pairedCount].name, sizeof(pairedDevices[pairedCount].name), 
                     "Device_%02X%02X", mac[4], mac[5]);
         }
-        
         pairedDevices[pairedCount].lastSeen = millis();
+
+        if (PairCommitFunc)
+        {
+            PairCommitFunc(&pairedDevices[pairedCount], PairData);
+        }
+
         /* 当前设备切换为新配对的设备 */
         pairIndex = pairedCount;
         pairedCount++;
@@ -218,6 +289,7 @@ void OnDataRecv(const uint8_t *mac, const uint8_t *incomingData, int len) {
         currentMode = MODE_JOYSTICK;
       } else if (exists) {
         Serial.println("设备已存在，无需重复添加");
+        isPaired = true;
       } else {
 
         memcpy(pairedDevices[MAX_DEVICES - 1].mac, mac, 6);

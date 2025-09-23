@@ -28,7 +28,7 @@
 #include "Utils/PageManager/PageManager.h"
 #include "Arduino.h"
 #include "Pages/StartUp/StartUp.h"
-
+#include "Pages/Calibrate/Calibrate.h"
 #define ACCOUNT_SEND_CMD(ACT, CMD) \
 do{ \
     DataProc::ACT##_Info_t info; \
@@ -104,6 +104,8 @@ void App_Init()
     manager.Install("Dialplate",   "Pages/Dialplate");
     manager.Install("Home",   "Pages/Home");
     manager.Install("Pair",   "Pages/Pair");
+    manager.Install("Calibrate",   "Pages/Calibrate");
+    manager.Install("Device",   "Pages/Device");
     manager.Install("SystemInfos", "Pages/SystemInfos");
     manager.Install("Startup",     "Pages/Startup");
 

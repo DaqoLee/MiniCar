@@ -129,7 +129,7 @@ void Remote_SetMode(OperationMode_t mode);
 void loadPairedDevices();
 void listPairedDevices();
 void savePairedDevices();
-
+void Pair_SetCommitCallback(CommitFunc_t func, void* userData);
 /* Memory */
 void Memory_DumpInfo();
 

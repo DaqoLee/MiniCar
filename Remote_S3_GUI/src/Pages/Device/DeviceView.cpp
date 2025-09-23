@@ -1,4 +1,4 @@
-#include "PairView.h"
+#include "DeviceView.h"
 #include <stdarg.h>
 #include <stdio.h>
 
@@ -6,7 +6,7 @@
 
 using namespace Page;
 
-void PairView::Create(lv_obj_t* root)
+void DeviceView::Create(lv_obj_t* root)
 {
    
     TopInfo_Create(root);
@@ -40,7 +40,7 @@ void PairView::Create(lv_obj_t* root)
     lv_anim_timeline_add_wrapper(ui.anim_timeline, wrapper);
 }
 
-void PairView::Delete()
+void DeviceView::Delete()
 {
     // if(ui.anim_timeline)
     // {
@@ -49,7 +49,7 @@ void PairView::Delete()
     // }
 }
 
-void PairView::TopInfo_Create(lv_obj_t* par)
+void DeviceView::TopInfo_Create(lv_obj_t* par)
 {
     lv_obj_t* cont = lv_obj_create(par);
     lv_obj_remove_style_all(cont);
@@ -87,7 +87,7 @@ void PairView::TopInfo_Create(lv_obj_t* par)
     }
 }
 
-void PairView::BottomInfo_Create(lv_obj_t* par)
+void DeviceView::BottomInfo_Create(lv_obj_t* par)
 {
     lv_obj_t* cont = lv_obj_create(par);
     lv_obj_remove_style_all(cont);
@@ -122,7 +122,7 @@ void PairView::BottomInfo_Create(lv_obj_t* par)
 }
 
 
-lv_obj_t* PairView::JoyBtn_Create(lv_obj_t* par, lv_coord_t x_ofs)
+lv_obj_t* DeviceView::JoyBtn_Create(lv_obj_t* par, lv_coord_t x_ofs)
 {
     lv_obj_t* obj = lv_obj_create(par);
     // lv_obj_set_pos(obj, 45, 45);
@@ -145,7 +145,7 @@ lv_obj_t* PairView::JoyBtn_Create(lv_obj_t* par, lv_coord_t x_ofs)
     return obj;
 }
 
-void PairView::SubInfoGrp_Create(lv_obj_t* par, SubInfo_t* info, const char* unitText)
+void DeviceView::SubInfoGrp_Create(lv_obj_t* par, SubInfo_t* info, const char* unitText)
 {
     lv_obj_t* cont = lv_obj_create(par);
     lv_obj_remove_style_all(cont);
@@ -172,7 +172,7 @@ void PairView::SubInfoGrp_Create(lv_obj_t* par, SubInfo_t* info, const char* uni
     info->cont = cont;
 }
 
-void PairView::BtnCont_Create(lv_obj_t* par)
+void DeviceView::BtnCont_Create(lv_obj_t* par)
 {
     lv_obj_t* cont = lv_obj_create(par);
     lv_obj_remove_style_all(cont);
@@ -194,7 +194,7 @@ void PairView::BtnCont_Create(lv_obj_t* par)
     ui.btnCont.btnMenu = Btn_Create(cont, ResourcePool::GetImage("menu"), 80);
 }
 
-lv_obj_t* PairView::Btn_Create(lv_obj_t* par, const void* img_src, lv_coord_t x_ofs)
+lv_obj_t* DeviceView::Btn_Create(lv_obj_t* par, const void* img_src, lv_coord_t x_ofs)
 {
     lv_obj_t* obj = lv_obj_create(par);
     lv_obj_remove_style_all(obj);
@@ -230,7 +230,7 @@ lv_obj_t* PairView::Btn_Create(lv_obj_t* par, const void* img_src, lv_coord_t x_
     return obj;
 }
 
-void PairView::AppearAnimStart(bool reverse)
+void DeviceView::AppearAnimStart(bool reverse)
 {
     lv_anim_timeline_set_reverse(ui.anim_timeline, reverse);
     lv_anim_timeline_start(ui.anim_timeline);

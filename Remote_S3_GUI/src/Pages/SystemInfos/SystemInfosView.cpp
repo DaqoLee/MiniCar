@@ -21,7 +21,7 @@ void SystemInfosView::Create(lv_obj_t* root)
 
     /* Item Sport */
     Item_Create(
-        &ui.sport,
+        &ui.home,
         root,
         "Home",
         "home",
@@ -33,7 +33,7 @@ void SystemInfosView::Create(lv_obj_t* root)
 
     /* Item GPS */
     Item_Create(
-        &ui.gps,
+        &ui.calibrate,
         root,
         "Calibrate",
         "calibrate",
@@ -48,7 +48,7 @@ void SystemInfosView::Create(lv_obj_t* root)
 
     /* Item MAG */
     Item_Create(
-        &ui.mag,
+        &ui.pair,
         root,
         "Pair",
         "pair",
@@ -61,7 +61,7 @@ void SystemInfosView::Create(lv_obj_t* root)
 
     /* Item IMU */
     Item_Create(
-        &ui.imu,
+        &ui.device,
         root,
         "Device",
         "device",
@@ -75,17 +75,6 @@ void SystemInfosView::Create(lv_obj_t* root)
         "Gz"
     );
 
-    /* Item RTC */
-    Item_Create(
-        &ui.rtc,
-        root,
-        "RTC",
-        "time_info",
-
-        "Date\n"
-        "Time"
-    );
-
     /* Item Battery */
     Item_Create(
         &ui.battery,
@@ -96,19 +85,6 @@ void SystemInfosView::Create(lv_obj_t* root)
         "Usage\n"
         "Voltage\n"
         "Status"
-    );
-
-    /* Item Storage */
-    Item_Create(
-        &ui.storage,
-        root,
-        "Storage",
-        "storage",
-
-        "Status\n"
-        "Size\n"
-        "Type\n"
-        "Version"
     );
 
     /* Item System */
@@ -305,7 +281,7 @@ void SystemInfosView::SetSport(
 )
 {
     lv_label_set_text_fmt(
-        ui.sport.labelData,
+        ui.home.labelData,
         "%0.2fkm\n"
         "%s\n"
         "%0.1fkm/h",
@@ -325,7 +301,7 @@ void SystemInfosView::SetGPS(
 )
 {
     lv_label_set_text_fmt(
-        ui.gps.labelData,
+        ui.calibrate.labelData,
         "%0.6f\n"
         "%0.6f\n"
         "%0.2fm\n"
@@ -349,7 +325,7 @@ void SystemInfosView::SetMAG(
 )
 {
     lv_label_set_text_fmt(
-        ui.mag.labelData,
+        ui.pair.labelData,
         "%0.1f deg\n"
         "%d\n"
         "%d\n"
@@ -385,17 +361,7 @@ void SystemInfosView::SetIMU(
         1, info);
     
     // 然后设置文本
-    lv_label_set_text(ui.imu.labelData, buffer);
-}
-
-void SystemInfosView::SetRTC(
-    const char* dateTime
-)
-{
-    lv_label_set_text(
-        ui.rtc.labelData,
-        dateTime
-    );
+    lv_label_set_text(ui.device.labelData, buffer);
 }
 
 void SystemInfosView::SetBattery(
@@ -434,25 +400,6 @@ void SystemInfosView::SetBattery(
     lv_label_set_text(ui.battery.labelData, buffer);
 }
 
-void SystemInfosView::SetStorage(
-    const char* detect,
-    const char* size,
-    const char* type,
-    const char* version
-)
-{
-    lv_label_set_text_fmt(
-        ui.storage.labelData,
-        "%s\n"
-        "%s\n"
-        "%s\n"
-        "%s",
-        detect,
-        size,
-        type,
-        version
-    );
-}
 
 void SystemInfosView::SetSystem(
     const char* firmVer,

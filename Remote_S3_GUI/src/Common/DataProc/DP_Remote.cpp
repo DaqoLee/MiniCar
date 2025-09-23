@@ -20,7 +20,27 @@ static int onEvent(Account* account, Account::EventParam_t* param)
     return Account::RES_OK;
 }
 
+
+
+
 DATA_PROC_INIT_DEF(Remote)
 {
     account->SetEventCallback(onEvent);
 }
+
+DATA_PROC_INIT_DEF(Joystick)
+{
+    HAL::Joystick_SetCommitCallback([](void* info, void* userData){
+        Account* account = (Account*)userData;
+        return account->Commit(info, sizeof(HAL::Joystick_Info_t));
+    }, account);
+}
+
+DATA_PROC_INIT_DEF(Pair)
+{
+    HAL::Pair_SetCommitCallback([](void* info, void* userData){
+        Account* account = (Account*)userData;
+        return account->Commit(info, sizeof(HAL::device_info_t));
+    }, account);
+}
+
