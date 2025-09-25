@@ -1,237 +1,428 @@
 #include "DeviceView.h"
-#include <stdarg.h>
-#include <stdio.h>
-
-#define ARRAY_SIZE(arr) (sizeof(arr)/sizeof(arr[0]))
-
+#include <cstdio>
 using namespace Page;
+
+#define ITEM_HEIGHT_MIN   100
+#define ITEM_PAD          ((LV_VER_RES - ITEM_HEIGHT_MIN) / 2)
 
 void DeviceView::Create(lv_obj_t* root)
 {
-   
-    TopInfo_Create(root);
-    BottomInfo_Create(root);
-    // BtnCont_Create(root);
+    lv_obj_set_style_pad_ver(root, ITEM_PAD, 0);
 
-    ui.anim_timeline = lv_anim_timeline_create();
+    lv_obj_set_flex_flow(root, LV_FLEX_FLOW_COLUMN);
+    lv_obj_set_flex_align(
+        root,
+        LV_FLEX_ALIGN_START,
+        LV_FLEX_ALIGN_START,
+        LV_FLEX_ALIGN_CENTER
+    );
 
-#define ANIM_DEF(start_time, obj, attr, start, end) \
-    {start_time, obj, LV_ANIM_EXEC(attr), start, end, 500, lv_anim_path_ease_out, true}
+    Style_Init();
 
-#define ANIM_OPA_DEF(start_time, obj) \
-    ANIM_DEF(start_time, obj, opa_scale, LV_OPA_TRANSP, LV_OPA_COVER)
+    /* Item Sport */
+    Item_Create(
+        &ui.home,
+        root,
+        "Home",
+        "home",
 
-    lv_coord_t y_tar_top = lv_obj_get_y(ui.topInfo.cont);
-    lv_coord_t y_tar_bottom = lv_obj_get_y(ui.bottomInfo.cont);
-    // lv_coord_t h_tar_btn = lv_obj_get_height(ui.btnCont.btnRec);
+        "Total trip\n"
+        "Total time\n"
+        "Max speed"
+    );
 
-    lv_anim_timeline_wrapper_t wrapper[] =
+    /* Item GPS */
+    Item_Create(
+        &ui.calibrate,
+        root,
+        "Calibrate",
+        "calibrate",
+
+        "Latitude\n"
+        "Longitude\n"
+        "Altitude\n"
+        "UTC Time\n\n"
+        "Course\n"
+        "Speed"
+    );
+
+    /* Item MAG */
+    Item_Create(
+        &ui.pair,
+        root,
+        "Pair",
+        "pair",
+
+        "Compass\n"
+        "X\n"
+        "Y\n"
+        "Z"
+    );
+
+    /* Item IMU */
+    Item_Create(
+        &ui.device,
+        root,
+        "Device",
+        "device",
+
+        "Step\n"
+        "Ax\n"
+        "Ay\n"
+        "Az\n"
+        "Gx\n"
+        "Gy\n"
+        "Gz"
+    );
+
+    /* Item Battery */
+    Item_Create(
+        &ui.battery,
+        root,
+        "Battery",
+        "battery_info",
+
+        "Usage\n"
+        "Voltage\n"
+        "Status"
+    );
+
+    /* Item System */
+    Item_Create(
+        &ui.system,
+        root,
+        "System",
+        "system_info",
+
+        "Firmware\n"
+        "Author\n"
+        "LVGL\n"
+        "SysTick\n"
+        "Compiler\n\n"
+        "Build\n"
+    );
+
+    Group_Init();
+}
+
+void DeviceView::Group_Init()
+{
+    lv_group_t* group = lv_group_get_default();
+    lv_group_set_wrap(group, true);
+    lv_group_set_focus_cb(group, onFocus);
+
+    item_t* item_grp = ((item_t*)&ui);
+
+    /* Reverse adding to group makes encoder operation more comfortable */
+    for (int i = sizeof(ui) / sizeof(item_t) - 1; i >= 0; i--)
     {
-        ANIM_DEF(0, ui.topInfo.cont, y, -100, y_tar_top),
+        lv_group_add_obj(group, item_grp[i].icon);
+    }
 
-        ANIM_DEF(200, ui.bottomInfo.cont, y, LV_VER_RES + lv_obj_get_height(ui.bottomInfo.cont), y_tar_bottom),
-        ANIM_OPA_DEF(200, ui.bottomInfo.cont),
-
-        // ANIM_DEF(500, ui.btnCont.btnMap, height, 0, h_tar_btn),
-        // ANIM_DEF(600, ui.btnCont.btnRec, height, 0, h_tar_btn),
-        // ANIM_DEF(700, ui.btnCont.btnMenu, height, 0, h_tar_btn),
-        LV_ANIM_TIMELINE_WRAPPER_END
-    };
-    lv_anim_timeline_add_wrapper(ui.anim_timeline, wrapper);
+    lv_group_focus_obj(item_grp[0].icon);
 }
 
 void DeviceView::Delete()
 {
-    // if(ui.anim_timeline)
-    // {
-    //     lv_anim_timeline_del(ui.anim_timeline);
-    //     ui.anim_timeline = nullptr;
-    // }
+    // lv_group_set_focus_cb(lv_group_get_default(), nullptr);
+    // Style_Reset();
 }
 
-void DeviceView::TopInfo_Create(lv_obj_t* par)
+void DeviceView::SetScrollToY(lv_obj_t* obj, lv_coord_t y, lv_anim_enable_t en)
 {
-    lv_obj_t* cont = lv_obj_create(par);
-    lv_obj_remove_style_all(cont);
-    lv_obj_set_style_bg_opa(cont, LV_OPA_COVER, 0);
-    lv_obj_set_style_bg_color(cont, lv_color_hex(0x333333), 0);
-    lv_obj_set_size(cont, LV_HOR_RES, 140);
-    lv_obj_set_style_radius(cont, 10, 0);
-    // lv_obj_set_y(cont, -40);
-    lv_obj_set_flex_flow(cont, LV_FLEX_FLOW_ROW_WRAP);
+    lv_coord_t scroll_y = lv_obj_get_scroll_y(obj);
+    lv_coord_t diff = -y + scroll_y;
 
-    lv_obj_set_flex_align(
-        cont,
-        LV_FLEX_ALIGN_SPACE_EVENLY,
-        LV_FLEX_ALIGN_CENTER,
-        LV_FLEX_ALIGN_END
-    );
-    lv_obj_set_y(cont, -40);
-    ui.topInfo.cont = cont;
+    lv_obj_scroll_by(obj, 0, diff, en);
+}
 
-    const char* unitText[4] =
+void DeviceView::SetScrollToX(lv_obj_t* obj, lv_coord_t x, lv_anim_enable_t en)
+{
+    lv_coord_t scroll_x = lv_obj_get_scroll_x(obj);
+    lv_coord_t diff = -x + scroll_x;
+
+    lv_obj_scroll_by(obj, 0, diff, en);
+}
+
+void DeviceView::onFocus(lv_group_t* g)
+{
+    lv_obj_t* icon = lv_group_get_focused(g);
+    lv_obj_t* cont = lv_obj_get_parent(icon);
+    lv_coord_t y = lv_obj_get_y(cont);
+    lv_obj_scroll_to_y(lv_obj_get_parent(cont), y, LV_ANIM_ON);
+    // lv_coord_t x = lv_obj_get_x(cont);
+    // lv_obj_scroll_to_x(lv_obj_get_parent(cont), x, LV_ANIM_ON);
+}
+
+void DeviceView::Style_Init()
+{
+    lv_style_init(&style.icon);
+    lv_style_set_width(&style.icon, 220);
+    lv_style_set_bg_color(&style.icon, lv_color_black());
+    lv_style_set_bg_opa(&style.icon, LV_OPA_COVER);
+    lv_style_set_text_font(&style.icon, ResourcePool::GetFont("bahnschrift_17"));
+    lv_style_set_text_color(&style.icon, lv_color_white());
+
+    lv_style_init(&style.focus);
+    lv_style_set_width(&style.focus, 70);
+    lv_style_set_border_side(&style.focus, LV_BORDER_SIDE_RIGHT);
+    lv_style_set_border_width(&style.focus, 2);
+    lv_style_set_border_color(&style.focus, lv_color_hex(0xff931e));
+
+    static const lv_style_prop_t style_prop[] =
     {
-        " ",
-        " ",
-        " ",
-        " "
+        LV_STYLE_WIDTH,
+        LV_STYLE_PROP_INV
     };
 
-    for (int i = 0; i < ARRAY_SIZE(ui.topInfo.labelInfoGrp); i++)
-    {
-        SubInfoGrp_Create(
-            cont,
-            &(ui.topInfo.labelInfoGrp[i]),
-            unitText[i]
-        );
-    }
+    static lv_style_transition_dsc_t trans;
+    lv_style_transition_dsc_init(
+        &trans,
+        style_prop,
+        lv_anim_path_overshoot,
+        200,
+        0,
+        nullptr
+    );
+    lv_style_set_transition(&style.focus, &trans);
+    lv_style_set_transition(&style.icon, &trans);
+
+    lv_style_init(&style.info);
+    lv_style_set_text_font(&style.info, ResourcePool::GetFont("bahnschrift_13"));
+    lv_style_set_text_color(&style.info, lv_color_hex(0x999999));
+
+    lv_style_init(&style.data);
+    lv_style_set_text_font(&style.data, ResourcePool::GetFont("bahnschrift_13"));
+    lv_style_set_text_color(&style.data, lv_color_white());
 }
 
-void DeviceView::BottomInfo_Create(lv_obj_t* par)
+void DeviceView::Style_Reset()
+{
+    lv_style_reset(&style.icon);
+    lv_style_reset(&style.info);
+    lv_style_reset(&style.data);
+    lv_style_reset(&style.focus);
+}
+
+void DeviceView::Item_Create(
+    item_t* item,
+    lv_obj_t* par,
+    const char* name,
+    const char* img_src,
+    const char* infos
+)
 {
     lv_obj_t* cont = lv_obj_create(par);
+    lv_obj_enable_style_refresh(false);
     lv_obj_remove_style_all(cont);
+    lv_obj_set_width(cont, 220);
 
-    
-    // lv_obj_set_style_bg_color(cont, lv_color_black(), 0);
-    lv_obj_set_style_bg_color(cont, lv_color_hex(0x111111), 0);//lv_color_hex(0x111111)
-    lv_obj_set_size(cont, LV_HOR_RES, 90);
-    lv_obj_align(cont, LV_ALIGN_BOTTOM_MID, 0, 0);
-    
-    // lv_obj_set_style_border_color(cont,  lv_color_hex(0xff931e), 0);//lv_color_hex(0xff931e)
-    // lv_obj_set_style_border_side(cont, LV_BORDER_SIDE_FULL, 0);
-    // lv_obj_set_style_border_width(cont, 1, 0);
-    // lv_obj_set_style_border_post(cont, true, 0);
-     lv_obj_set_style_radius(cont, 15, 0);
-    // lv_obj_align(cont, LV_ALIGN_TOP_MID, 0, 120);
+    lv_obj_clear_flag(cont, LV_OBJ_FLAG_SCROLLABLE);
+    item->cont = cont;
 
-    // lv_obj_set_flex_flow(cont, LV_FLEX_FLOW_ROW_WRAP);
+    /* icon */
+    lv_obj_t* icon = lv_obj_create(cont);
+    lv_obj_enable_style_refresh(false);
+    lv_obj_remove_style_all(icon);
+    lv_obj_clear_flag(icon, LV_OBJ_FLAG_SCROLLABLE);
 
-    // lv_obj_set_flex_align(
-    //     cont,
-    //     LV_FLEX_ALIGN_SPACE_EVENLY,
-    //     LV_FLEX_ALIGN_CENTER,
-    //     LV_FLEX_ALIGN_CENTER
-    // );
+    lv_obj_add_style(icon, &style.icon, 0);
+    lv_obj_add_style(icon, &style.focus, LV_STATE_FOCUSED);
+    lv_obj_set_style_align(icon, LV_ALIGN_LEFT_MID, 0);
 
-    ui.bottomInfo.cont = cont;
-
-    ui.bottomInfo.btnLeft = JoyBtn_Create(cont, -70);
-    ui.bottomInfo.btnRight = JoyBtn_Create(cont, 70);
-
-}
-
-
-lv_obj_t* DeviceView::JoyBtn_Create(lv_obj_t* par, lv_coord_t x_ofs)
-{
-    lv_obj_t* obj = lv_obj_create(par);
-    // lv_obj_set_pos(obj, 45, 45);
-    lv_obj_set_size(obj, 30, 30);
-    // obj_label = lv_label_create(obj);
-    // lv_label_set_text(obj_label, "");
-    // lv_label_set_long_mode(obj_label, LV_LABEL_LONG_WRAP);
-    // lv_obj_align(obj_label, LV_ALIGN_CENTER, 0, 0);
-    lv_obj_set_style_pad_all(obj, 0, LV_STATE_DEFAULT);
-    // lv_obj_set_width(obj_label, LV_PCT(100));
-    lv_obj_align(obj, LV_ALIGN_CENTER, x_ofs, 0);
-    //Write style for main_btn_1, Part: LV_PART_MAIN, State: LV_STATE_DEFAULT.
-    lv_obj_set_style_bg_opa(obj, 255, LV_PART_MAIN|LV_STATE_DEFAULT);
-    lv_obj_set_style_bg_color(obj, lv_color_hex(0xff931e), LV_PART_MAIN|LV_STATE_DEFAULT);
-    lv_obj_set_style_bg_grad_dir(obj, LV_GRAD_DIR_NONE, LV_PART_MAIN|LV_STATE_DEFAULT);
-    lv_obj_set_style_border_width(obj, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
-    lv_obj_set_style_radius(obj, 15, LV_PART_MAIN|LV_STATE_DEFAULT);
-    lv_obj_set_style_shadow_width(obj, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
-
-    return obj;
-}
-
-void DeviceView::SubInfoGrp_Create(lv_obj_t* par, SubInfo_t* info, const char* unitText)
-{
-    lv_obj_t* cont = lv_obj_create(par);
-    lv_obj_remove_style_all(cont);
-    lv_obj_set_size(cont, 100, 55);
-    lv_obj_set_flex_flow(cont, LV_FLEX_FLOW_COLUMN);
+    lv_obj_set_flex_flow(icon, LV_FLEX_FLOW_COLUMN);
     lv_obj_set_flex_align(
-        cont,
+        icon,
         LV_FLEX_ALIGN_SPACE_AROUND,
         LV_FLEX_ALIGN_CENTER,
         LV_FLEX_ALIGN_CENTER
     );
 
-    lv_obj_t* label = lv_label_create(cont);
-    lv_obj_set_style_text_font(label, ResourcePool::GetFont("bahnschrift_17"), 0);
-    lv_obj_set_style_text_color(label, lv_color_white(), 0);
-    info->lableValue = label;
+    lv_obj_t* img = lv_img_create(icon);
+    lv_obj_enable_style_refresh(false);
+    lv_img_set_src(img, ResourcePool::GetImage(img_src));
 
-    // label = lv_label_create(cont);
-    // lv_obj_set_style_text_font(label, ResourcePool::GetFont("bahnschrift_13"), 0);
-    // lv_obj_set_style_text_color(label, lv_color_hex(0xb3b3b3), 0);
-    // lv_label_set_text(label, unitText);
-    // info->lableUnit = label;
+    lv_obj_t* label = lv_label_create(icon);
+    lv_obj_enable_style_refresh(false);
+    lv_label_set_text(label, name);
+    item->icon = icon;
 
-    info->cont = cont;
+    /* infos */
+    label = lv_label_create(cont);
+    lv_obj_enable_style_refresh(false);
+    lv_label_set_text(label, infos);
+    lv_obj_add_style(label, &style.info, 0);
+    lv_obj_align(label, LV_ALIGN_LEFT_MID, 75, 0);
+    item->labelInfo = label;
+
+    /* datas */
+    label = lv_label_create(cont);
+    lv_obj_enable_style_refresh(false);
+    lv_label_set_text(label, "-");
+    lv_obj_add_style(label, &style.data, 0);
+    lv_obj_align(label, LV_ALIGN_CENTER, 60, 0);
+    item->labelData = label;
+
+    lv_obj_move_foreground(icon);
+    lv_obj_enable_style_refresh(true);
+
+    /* get real max height */
+    lv_obj_update_layout(item->labelInfo);
+    lv_coord_t height = lv_obj_get_height(item->labelInfo);
+    height = LV_MAX(height, ITEM_HEIGHT_MIN);
+    lv_obj_set_height(cont, height);
+    lv_obj_set_height(icon, height);
 }
 
-void DeviceView::BtnCont_Create(lv_obj_t* par)
+void DeviceView::SetSport(
+    float trip,
+    const char* time,
+    float maxSpd
+)
 {
-    lv_obj_t* cont = lv_obj_create(par);
-    lv_obj_remove_style_all(cont);
-    lv_obj_set_size(cont, LV_HOR_RES, 40);
-    lv_obj_align_to(cont, ui.topInfo.cont, LV_ALIGN_OUT_BOTTOM_MID, 0, 40);
-
-    /*lv_obj_set_flex_flow(cont, LV_FLEX_FLOW_ROW);
-    lv_obj_set_flex_place(
-        cont,
-        LV_FLEX_PLACE_SPACE_AROUND,
-        LV_FLEX_PLACE_CENTER,
-        LV_FLEX_PLACE_CENTER
-    );*/
-
-    ui.btnCont.cont = cont;
-
-    ui.btnCont.btnMap = Btn_Create(cont, ResourcePool::GetImage("locate"), -80);
-    ui.btnCont.btnRec = Btn_Create(cont, ResourcePool::GetImage("start"), 0);
-    ui.btnCont.btnMenu = Btn_Create(cont, ResourcePool::GetImage("menu"), 80);
-}
-
-lv_obj_t* DeviceView::Btn_Create(lv_obj_t* par, const void* img_src, lv_coord_t x_ofs)
-{
-    lv_obj_t* obj = lv_obj_create(par);
-    lv_obj_remove_style_all(obj);
-    lv_obj_set_size(obj, 40, 31);
-    lv_obj_clear_flag(obj, LV_OBJ_FLAG_SCROLLABLE);
-
-    lv_obj_align(obj, LV_ALIGN_CENTER, x_ofs, 0);
-    lv_obj_set_style_bg_img_src(obj, img_src, 0);
-
-    lv_obj_set_style_bg_opa(obj, LV_OPA_COVER, 0);
-    lv_obj_set_style_width(obj, 45, LV_STATE_PRESSED);
-    lv_obj_set_style_height(obj, 25, LV_STATE_PRESSED);
-    lv_obj_set_style_bg_color(obj, lv_color_hex(0x666666), 0);
-    lv_obj_set_style_bg_color(obj, lv_color_hex(0xbbbbbb), LV_STATE_PRESSED);
-    lv_obj_set_style_bg_color(obj, lv_color_hex(0xff931e), LV_STATE_FOCUSED);
-    lv_obj_set_style_radius(obj, 9, 0);
-
-    static lv_style_transition_dsc_t tran;
-    static const lv_style_prop_t prop[] = { LV_STYLE_WIDTH, LV_STYLE_HEIGHT, LV_STYLE_PROP_INV};
-    lv_style_transition_dsc_init(
-        &tran,
-        prop,
-        lv_anim_path_ease_out,
-        200,
-        0,
-        nullptr
+    lv_label_set_text_fmt(
+        ui.home.labelData,
+        "%0.2fkm\n"
+        "%s\n"
+        "%0.1fkm/h",
+        trip,
+        time,
+        maxSpd
     );
-    lv_obj_set_style_transition(obj, &tran, LV_STATE_PRESSED);
-    lv_obj_set_style_transition(obj, &tran, LV_STATE_FOCUSED);
-
-    lv_obj_update_layout(obj);
-
-    return obj;
 }
 
-void DeviceView::AppearAnimStart(bool reverse)
+void DeviceView::SetGPS(
+    float lat,
+    float lng,
+    float alt,
+    const char* utc,
+    float course,
+    float speed
+)
 {
-    lv_anim_timeline_set_reverse(ui.anim_timeline, reverse);
-    lv_anim_timeline_start(ui.anim_timeline);
+    lv_label_set_text_fmt(
+        ui.calibrate.labelData,
+        "%0.6f\n"
+        "%0.6f\n"
+        "%0.2fm\n"
+        "%s\n"
+        "%0.1f deg\n"
+        "%0.1fkm/h",
+        lat,
+        lng,
+        alt,
+        utc,
+        course,
+        speed
+    );
+}
+
+void DeviceView::SetMAG(
+    float dir,
+    int x,
+    int y,
+    int z
+)
+{
+    lv_label_set_text_fmt(
+        ui.pair.labelData,
+        "%0.1f deg\n"
+        "%d\n"
+        "%d\n"
+        "%d",
+        dir,
+        x,
+        y,
+        z
+    );
+}
+
+void DeviceView::SetIMU(
+    int step,
+    const char* info
+)
+{
+    // lv_label_set_text_fmt(
+    //     ui.imu.labelData,
+    //     "%d\n"
+    //     "%s",
+    //     step,
+    //     info
+    // );
+
+
+            // 使用静态缓冲区
+    static char buffer[64];
+    //usage = CLAMP(usage, 0, 100);
+    
+    // 先格式化到缓冲区
+    snprintf(buffer, sizeof(buffer),
+        "%d\n%s",
+        1, info);
+    
+    // 然后设置文本
+    lv_label_set_text(ui.device.labelData, buffer);
+}
+
+void DeviceView::SetBattery(
+    int usage,
+    float voltage,
+    const char* state
+)
+{
+    // PM_LOG_INFO("SetBattery params: usage=%d, voltage=%.2f, state=%s", 
+    //             usage, voltage, state ? state : "NULL");
+    // lv_label_set_text_fmt(
+    //     ui.battery.labelData,
+    //     "%d%%\n"
+    //     "%0.2fV\n"
+    //     "%s",
+    //     10,
+    //     3.8f,
+    //     "state"
+    // );
+
+        // 使用静态缓冲区
+    static char buffer[64];
+    
+    if (state == nullptr) {
+        state = "N/A";
+    }
+    
+    //usage = CLAMP(usage, 0, 100);
+    
+    // 先格式化到缓冲区
+    snprintf(buffer, sizeof(buffer),
+        "%d%%\n%0.2fV\n%s",
+        usage, voltage, state);
+    
+    // 然后设置文本
+    lv_label_set_text(ui.battery.labelData, buffer);
+}
+
+
+void DeviceView::SetSystem(
+    const char* firmVer,
+    const char* authorName,
+    const char* lvglVer,
+    const char* bootTime,
+    const char* compilerName,
+    const char* bulidTime
+)
+{
+    lv_label_set_text_fmt(
+        ui.system.labelData,
+        "%s\n"
+        "%s\n"
+        "%s\n"
+        "%s\n"
+        "%s\n"
+        "%s",
+        firmVer,
+        authorName,
+        lvglVer,
+        bootTime,
+        compilerName,
+        bulidTime
+    );
 }

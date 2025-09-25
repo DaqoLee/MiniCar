@@ -1,5 +1,5 @@
 #include "Home.h"
-
+#include <Arduino.h> 
 using namespace Page;
 
 Home::Home()
@@ -91,12 +91,29 @@ void Home::Update()
 
     uint16_t joydata[4];
     Model.GetJoystickInfo(joydata);
-    for (int i = 0; i < 4; i++)
-    {
-        lv_label_set_text_fmt(
-        View.ui.topInfo.labelInfoGrp[i].lableValue,
-        "%d", joydata[i]);
+    //for (int i = 0; i < 4; i++)
+    {   
+        // lv_label_set_text_fmt(
+        // View.ui.topInfo.labelInfoGrp[0].lableValue,
+        // "%d", lv_map(joydata[0],0,4096,-100,100));
+        // lv_label_set_text_fmt(
+        // View.ui.topInfo.labelInfoGrp[1].lableValue,
+        // "%d", lv_map(joydata[2],0,4096,-100,100));
+        // lv_label_set_text_fmt(
+        // View.ui.topInfo.labelInfoGrp[2].lableValue,
+        // "%d",lv_map(joydata[1],0,4096,-100,100));
+        //         lv_label_set_text_fmt(
+        // View.ui.topInfo.labelInfoGrp[3].lableValue,
+        // "%d", lv_map(joydata[3],0,4096,-100,100));
     }
+    // LV_LOG_INFO("Value %d\r\n"lv_map(joydata[0],0,4096,-100,100));
+    // Serial.print(joydata[0]);
+    // Serial.print(" ");
+    // Serial.println(lv_map(joydata[0],0,4096,-100,100));
+    lv_bar_set_value(View.ui.topInfo.barInfoGrp[0].bar[0], lv_map(joydata[0],0,4095,-100,100), LV_ANIM_OFF);
+    lv_bar_set_value(View.ui.topInfo.barInfoGrp[0].bar[1], lv_map(joydata[1],0,4095,-100,100), LV_ANIM_OFF);
+    lv_bar_set_value(View.ui.topInfo.barInfoGrp[1].bar[0], lv_map(joydata[2],0,4095,-100,100), LV_ANIM_OFF);
+    lv_bar_set_value(View.ui.topInfo.barInfoGrp[1].bar[1], lv_map(joydata[3],0,4095,-100,100), LV_ANIM_OFF);
 }
 
 void Home::onTimerUpdate(lv_timer_t* timer)

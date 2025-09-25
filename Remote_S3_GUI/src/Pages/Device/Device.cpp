@@ -1,30 +1,35 @@
 #include "Device.h"
+#include "Version.h"
+#include "Utils/PageManager/PM_Log.h"
 using namespace Page;
 
-Device::Device()
-    : recState(RECORD_STATE_READY)
-    , lastFocus(nullptr)
+Device::Device():lastFocus(nullptr)
 {
 }
 
 Device::~Device()
 {
+
 }
 
 void Device::onCustomAttrConfig()
 {
-    SetCustomLoadAnimType(PageManager::LOAD_ANIM_NONE);
+
 }
 
 void Device::onViewLoad()
 {
     Model.Init();
     View.Create(_root);
-
     AttachEvent(_root);
-    AttachEvent(View.ui.bottomInfo.cont);
-    // AttachEvent(View.ui.btnCont.btnRec);
-    // AttachEvent(View.ui.btnCont.btnMenu);
+    lastFocus = nullptr;
+
+    DeviceView::item_t* item_grp = ((DeviceView::item_t*)&View.ui);
+
+    for (int i = 0; i < sizeof(View.ui) / sizeof(DeviceView::item_t); i++)
+    {
+        AttachEvent(item_grp[i].icon);
+    }
 }
 
 void Device::onViewDidLoad()
@@ -34,34 +39,42 @@ void Device::onViewDidLoad()
 
 void Device::onViewWillAppear()
 {
-    lv_indev_wait_release(lv_indev_get_act());
-    lv_group_t* group = lv_group_get_default();
-    LV_ASSERT_NULL(group);
+ 
+    Model.SetStatusBarStyle(DataProc::STATUS_BAR_STYLE_BLACK);
+    Model.SetRemoteMode(DataProc::OperationMode_t::MODE_OTA);
+    timer = lv_timer_create(onTimerUpdate, 100, this);
+    lv_timer_ready(timer);
 
-    lv_group_set_wrap(group, true);
-
-    lv_group_add_obj(group, View.ui.bottomInfo.cont);
-    lv_group_focus_obj(View.ui.bottomInfo.cont);
-
-    // if (lastFocus)
-    // {
-    //     lv_group_focus_obj(lastFocus);
-    // }
-    // else
-    // {
-    //     lv_group_focus_obj(View.ui.btnCont.btnRec);
-    // }
-
-    Model.SetStatusBarStyle(DataProc::STATUS_BAR_STYLE_TRANSP);
-
-    Update();
-
-    View.AppearAnimStart();
+    View.SetScrollToY(_root, -LV_VER_RES, LV_ANIM_OFF);
+    lv_obj_set_style_opa(_root, LV_OPA_TRANSP, 0);
+    lv_obj_fade_in(_root, 300, 0);
 }
 
 void Device::onViewDidAppear()
 {
-    timer = lv_timer_create(onTimerUpdate, 100, this);
+    lv_group_t* group = lv_group_get_default();
+    lv_group_set_wrap(group, true);
+    LV_ASSERT_NULL(group);
+
+    // 确保Device页面的对象重新添加到焦点组
+    DeviceView::item_t* item_grp = ((DeviceView::item_t*)&View.ui);
+    for (int i = 0; i < sizeof(View.ui) / sizeof(DeviceView::item_t); i++)
+    {
+        lv_group_add_obj(group, item_grp[i].icon);
+    }
+    if (lastFocus)
+    {
+        lv_group_focus_obj(lastFocus);
+    }
+    else
+    {
+        // 设置焦点到第一个项目
+        lv_group_focus_obj(item_grp[0].icon);
+    }
+    
+    // 确保焦点组的包装模式正确
+    
+    View.onFocus(group);
 }
 
 void Device::onViewWillDisappear()
@@ -69,21 +82,18 @@ void Device::onViewWillDisappear()
     lv_group_t* group = lv_group_get_default();
     LV_ASSERT_NULL(group);
     lastFocus = lv_group_get_focused(group);
-    // lv_group_remove_obj(View.ui.bottomInfo.cont);
-    lv_group_remove_all_objs(group);
-    lv_timer_del(timer);
-    // View.AppearAnimStart(true);
+    lv_obj_fade_out(_root, 300, 0);
 }
 
 void Device::onViewDidDisappear()
 {
+    lv_timer_del(timer);
 }
 
 void Device::onViewUnload()
 {
     View.Delete();
     Model.Deinit();
-   
 }
 
 void Device::onViewDidUnload()
@@ -98,15 +108,53 @@ void Device::AttachEvent(lv_obj_t* obj)
 
 void Device::Update()
 {
+    char buf[64];
 
-    char name[32] = {0};
-    Model.GetDeviceInfo(name);
-   // for (int i = 0; i < 4; i++)
-   if (name[0])
-    {
-        lv_label_set_text(
-        View.ui.topInfo.labelInfoGrp[0].lableValue,name);
-    }
+    /* Sport */
+    float trip;
+    float maxSpd;
+    Model.GetSportInfo(&trip, buf, sizeof(buf), &maxSpd);
+    // View.SetSport(trip, buf, maxSpd);
+
+    /* GPS */
+    float lat;
+    float lng;
+    float alt;
+    float course;
+    float speed;
+    Model.GetGPSInfo(&lat, &lng, &alt, buf, sizeof(buf), &course, &speed);
+    // View.SetGPS(lat, lng, alt, buf, course, speed);
+
+    /* MAG */
+    float dir;
+    int x;
+    int y;
+    int z;
+    Model.GetMAGInfo(&dir, &x, &y, &z);
+    // View.SetMAG(dir, x, y, z);
+
+    /* IMU */
+    int steps;
+    Model.GetIMUInfo(&steps, buf, sizeof(buf));
+    View.SetIMU(steps, buf);
+
+    /* Power */
+    int usage;
+    float voltage;
+    Model.GetBatteryInfo(&usage, &voltage, buf, sizeof(buf));
+    View.SetBattery(usage, voltage, buf);
+
+
+    /* System */
+    // DataProc::MakeTimeString(lv_tick_get(), buf, sizeof(buf));
+    View.SetSystem(
+        VERSION_FIRMWARE_NAME " " VERSION_SOFTWARE,
+        VERSION_AUTHOR_NAME,
+        VERSION_LVGL,
+        buf,
+        VERSION_COMPILER,
+        VERSION_BUILD_TIME
+    );
 }
 
 void Device::onTimerUpdate(lv_timer_t* timer)
@@ -118,87 +166,26 @@ void Device::onTimerUpdate(lv_timer_t* timer)
 
 void Device::onBtnClicked(lv_obj_t* btn)
 {
-    // if (btn == View.ui.btnCont.btnMap)
-    // {
-    //     _Manager->Push("Pages/LiveMap");
-    // }
-    // else if (btn == View.ui.btnCont.btnMenu || btn == _root)
+    if (btn == View.ui.pair.icon)
     {
+        //_Manager->Push("Pages/Pair");
+    }
+    else if (btn == View.ui.home.icon)
+    {
+        // _Manager->Push("Pages/Home");
         _Manager->Pop();
     }
-}
-
-void Device::onRecord(bool longPress)
-{
-    switch (recState)
+    else if (btn == View.ui.calibrate.icon)
     {
-    case RECORD_STATE_READY:
-        if (longPress)
-        {
-            if (!Model.GetGPSReady())
-            {
-                LV_LOG_WARN("GPS has not ready, can't start record");
-                Model.PlayMusic("Error");
-                return;
-            }
-
-            Model.PlayMusic("Connect");
-            Model.RecorderCommand(Model.REC_START);
-            SetBtnRecImgSrc("pause");
-            recState = RECORD_STATE_RUN;
-        }
-        break;
-    case RECORD_STATE_RUN:
-        if (!longPress)
-        {
-            Model.PlayMusic("UnstableConnect");
-            Model.RecorderCommand(Model.REC_PAUSE);
-            SetBtnRecImgSrc("start");
-            recState = RECORD_STATE_PAUSE;
-        }
-        break;
-    case RECORD_STATE_PAUSE:
-        if (longPress)
-        {
-            Model.PlayMusic("NoOperationWarning");
-            SetBtnRecImgSrc("stop");
-            Model.RecorderCommand(Model.REC_READY_STOP);
-            recState = RECORD_STATE_STOP;
-        }
-        else
-        {
-            Model.PlayMusic("Connect");
-            Model.RecorderCommand(Model.REC_CONTINUE);
-            SetBtnRecImgSrc("pause");
-            recState = RECORD_STATE_RUN;
-        }
-        break;
-    case RECORD_STATE_STOP:
-        if (longPress)
-        {
-            Model.PlayMusic("Disconnect");
-            Model.RecorderCommand(Model.REC_STOP);
-            SetBtnRecImgSrc("start");
-            recState = RECORD_STATE_READY;
-        }
-        else
-        {
-            Model.PlayMusic("Connect");
-            Model.RecorderCommand(Model.REC_CONTINUE);
-            SetBtnRecImgSrc("pause");
-            recState = RECORD_STATE_RUN;
-        }
-        break;
-    default:
-        break;
+       // _Manager->Push("Pages/Calibrate");
     }
-}
+    else if (btn == View.ui.device.icon)
+    {
+       // _Manager->Push("Pages/Device");
+    }    
 
-void Device::SetBtnRecImgSrc(const char* srcName)
-{
-    lv_obj_set_style_bg_img_src(View.ui.btnCont.btnRec, ResourcePool::GetImage(srcName), 0);
+    
 }
-
 void Device::onEvent(lv_event_t* event)
 {
     Device* instance = (Device*)lv_event_get_user_data(event);
@@ -206,30 +193,25 @@ void Device::onEvent(lv_event_t* event)
 
     lv_obj_t* obj = lv_event_get_current_target(event);
     lv_event_code_t code = lv_event_get_code(event);
-    // if (obj == instance->_root)
-    // {
-    //     if (code == LV_EVENT_PRESSED)
-    //     {
-    //         instance->onBtnClicked(obj);
-    //     }
-    // }
 
-    if (obj == instance->View.ui.bottomInfo.cont && code == LV_EVENT_SHORT_CLICKED)
+    if (code == LV_EVENT_PRESSED)
     {
-        instance->onBtnClicked(obj);  // 仅该场景执行Pop
+        instance->onBtnClicked(obj);
     }
 
-    // if (obj == instance->View.ui.btnCont.btnRec)
+    // if (code == LV_EVENT_PRESSED)
     // {
-    //     if (code == LV_EVENT_SHORT_CLICKED)
+    //     if (lv_obj_has_state(obj, LV_STATE_FOCUSED))
     //     {
-    //         instance->onRecord(false);
-    //     }
-    //     else if (code == LV_EVENT_LONG_PRESSED)
-    //     {
-    //         instance->onRecord(true);
+    //         instance->_Manager->Pop();
     //     }
     // }
 
-   
+    // if (obj == instance->_root)
+    // {
+    //     if (code == LV_EVENT_LEAVE)
+    //     {
+    //         instance->_Manager->Pop();
+    //     }
+    // }
 }

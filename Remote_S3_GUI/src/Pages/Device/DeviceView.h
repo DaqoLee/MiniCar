@@ -8,66 +8,94 @@ namespace Page
 
 class DeviceView
 {
+public:
+    void Create(lv_obj_t* root);
+    void Delete();
 
 public:
     typedef struct
     {
         lv_obj_t* cont;
-        lv_obj_t* lableValue;
-        lv_obj_t* lableUnit;
-    } SubInfo_t;
+        lv_obj_t* icon;
+        lv_obj_t* labelInfo;
+        lv_obj_t* labelData;
+    } item_t;
 
-public:
     struct
     {
-        struct
-        {
-            lv_obj_t* cont;
-            // lv_obj_t* labelSpeed;
-            // lv_obj_t* labelUint;
-            lv_obj_t* labelStatus;
-            lv_obj_t* batteryBarLeft;
-            lv_obj_t* batteryBarRight;
-            SubInfo_t labelInfoGrp[4];
-        } topInfo;
-
-          struct
-        {
-            lv_obj_t* cont;
-            lv_obj_t* labelSpeed;
-            lv_obj_t* labelUint;
-        } middleInfo;      
-
-        struct
-        {
-            lv_obj_t* cont;
-            lv_obj_t* btnLeft;
-            lv_obj_t* btnRight;
-            SubInfo_t labelInfoGrp[4];
-        } bottomInfo;
-
-        struct
-        {
-            lv_obj_t* cont;
-            lv_obj_t* btnMap;
-            lv_obj_t* btnRec;
-            lv_obj_t* btnMenu;
-        } btnCont;
-
-        lv_anim_timeline_t* anim_timeline;
+        item_t home;
+        item_t calibrate;
+        item_t pair;
+        item_t device;
+        item_t battery;
+        item_t system;
     } ui;
 
-    void Create(lv_obj_t* root);
-    void Delete();
-    void AppearAnimStart(bool reverse = false);
+public:
+    void SetSport(
+        float trip,
+        const char* time,
+        float maxSpd
+    );
+    void SetGPS(
+        float lat,
+        float lng,
+        float alt,
+        const char* utc,
+        float course,
+        float speed
+    );
+    void SetMAG(
+        float dir,
+        int x,
+        int y,
+        int z
+    );
+    void SetIMU(
+        int step,
+        const char* info
+    );
+    void SetRTC(
+        const char* dateTime
+    );
+    void SetBattery(
+        int usage,
+        float voltage,
+        const char* state
+    );
+    void SetSystem(
+        const char* firmVer,
+        const char* authorName,
+        const char* lvglVer,
+        const char* bootTime,
+        const char* compilerName,
+        const char* bulidTime
+    );
+
+    void SetScrollToY(lv_obj_t* obj, lv_coord_t y, lv_anim_enable_t en);
+    void SetScrollToX(lv_obj_t* obj, lv_coord_t x, lv_anim_enable_t en);
+    static void onFocus(lv_group_t* e);
 
 private:
-    void TopInfo_Create(lv_obj_t* par);
-    void BottomInfo_Create(lv_obj_t* par);
-    void SubInfoGrp_Create(lv_obj_t* par, SubInfo_t* info, const char* unitText);
-    void BtnCont_Create(lv_obj_t* par);
-    lv_obj_t* Btn_Create(lv_obj_t* par, const void* img_src, lv_coord_t x_ofs);
-    lv_obj_t* JoyBtn_Create(lv_obj_t* par, lv_coord_t x_ofs);
+    struct
+    {
+        lv_style_t icon;
+        lv_style_t focus;
+        lv_style_t info;
+        lv_style_t data;
+    } style;
+
+private:
+    void Group_Init();
+    void Style_Init();
+    void Style_Reset();
+    void Item_Create(
+        item_t* item,
+        lv_obj_t* par,
+        const char* name,
+        const char* img_src,
+        const char* infos
+    );
 };
 
 }

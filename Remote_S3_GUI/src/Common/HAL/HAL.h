@@ -126,10 +126,16 @@ bool Audio_PlayMusic(const char* name);
 void Remote_Init();
 void Remote_Update();
 void Remote_SetMode(OperationMode_t mode);
+void Remote_SetCalibrateStep(CalibrateMode_t step);
 void loadPairedDevices();
 void listPairedDevices();
 void savePairedDevices();
 void Pair_SetCommitCallback(CommitFunc_t func, void* userData);
+void Calibrate_SetCommitCallback(CommitFunc_t func, void* userData);
+void loadJoyCalibrateData();
+void saveJoyCalibrateData();
+void calibrateLeftRightJoystick();
+long JoyMap(long x, long in_min, long in_mid, long in_max, long out_min, long out_max);
 /* Memory */
 void Memory_DumpInfo();
 

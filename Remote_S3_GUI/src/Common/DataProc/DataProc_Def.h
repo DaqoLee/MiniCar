@@ -143,9 +143,22 @@ typedef struct
 
 typedef enum  {
   MODE_JOYSTICK,  // 摇杆控制模式
+  MODE_CALIBRATE,
+  MODE_PAIR,
   MODE_OTA,        // OTA更新模式
-  MODE_PAIR
+  MODE_MAX
 }OperationMode_t;
+
+
+typedef enum  {
+  READ_MID,  // 摇杆控制模式
+  READ_MAX_MIN,
+  SAVE,
+  EXIT,        // OTA更新模式
+  CALI_MAX
+}CalibrateMode_t;
+
+
 typedef struct
 {
    uint8_t mac[6];
@@ -154,8 +167,8 @@ typedef struct
 
 typedef struct
 {
-   OperationMode_t mode; 
-   
+   OperationMode_t mode = MODE_JOYSTICK; 
+   CalibrateMode_t step = READ_MID;
 } Remote_Info_t;
 
 }

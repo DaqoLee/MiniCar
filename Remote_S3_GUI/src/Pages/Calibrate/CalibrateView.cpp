@@ -55,7 +55,7 @@ void CalibrateView::TopInfo_Create(lv_obj_t* par)
     lv_obj_remove_style_all(cont);
     lv_obj_set_style_bg_opa(cont, LV_OPA_COVER, 0);
     lv_obj_set_style_bg_color(cont, lv_color_hex(0x333333), 0);
-    lv_obj_set_size(cont, LV_HOR_RES, 140);
+    lv_obj_set_size(cont, LV_HOR_RES, 160);
     lv_obj_set_style_radius(cont, 10, 0);
     // lv_obj_set_y(cont, -40);
     lv_obj_set_flex_flow(cont, LV_FLEX_FLOW_ROW_WRAP);
@@ -69,9 +69,17 @@ void CalibrateView::TopInfo_Create(lv_obj_t* par)
     lv_obj_set_y(cont, -40);
     ui.topInfo.cont = cont;
 
-    const char* unitText[4] =
+    // for (int i = 0; i < ARRAY_SIZE(ui.topInfo.barInfoGrp); i++)
+    // {
+    //     BarInfoGrp_Create(
+    //         cont,
+    //         &(ui.topInfo.barInfoGrp[i])
+    //     );
+    // }
+
+    const char* unitText[12] =
     {
-        " ",
+        "device ",
         " ",
         " ",
         " "
@@ -95,7 +103,7 @@ void CalibrateView::BottomInfo_Create(lv_obj_t* par)
     
     // lv_obj_set_style_bg_color(cont, lv_color_black(), 0);
     lv_obj_set_style_bg_color(cont, lv_color_hex(0x111111), 0);//lv_color_hex(0x111111)
-    lv_obj_set_size(cont, LV_HOR_RES, 90);
+    lv_obj_set_size(cont, LV_HOR_RES, 50);
     lv_obj_align(cont, LV_ALIGN_BOTTOM_MID, 0, 0);
     
     // lv_obj_set_style_border_color(cont,  lv_color_hex(0xff931e), 0);//lv_color_hex(0xff931e)
@@ -136,7 +144,10 @@ lv_obj_t* CalibrateView::JoyBtn_Create(lv_obj_t* par, lv_coord_t x_ofs)
     lv_obj_align(obj, LV_ALIGN_CENTER, x_ofs, 0);
     //Write style for main_btn_1, Part: LV_PART_MAIN, State: LV_STATE_DEFAULT.
     lv_obj_set_style_bg_opa(obj, 255, LV_PART_MAIN|LV_STATE_DEFAULT);
-    lv_obj_set_style_bg_color(obj, lv_color_hex(0xff931e), LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_bg_color(obj, lv_color_hex(0x666666), LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_bg_color(obj, lv_color_hex(0xbbbbbb), LV_STATE_PRESSED);
+    lv_obj_set_style_bg_color(obj, lv_color_hex(0xff931e), LV_STATE_FOCUSED);
+
     lv_obj_set_style_bg_grad_dir(obj, LV_GRAD_DIR_NONE, LV_PART_MAIN|LV_STATE_DEFAULT);
     lv_obj_set_style_border_width(obj, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
     lv_obj_set_style_radius(obj, 15, LV_PART_MAIN|LV_STATE_DEFAULT);
@@ -149,7 +160,7 @@ void CalibrateView::SubInfoGrp_Create(lv_obj_t* par, SubInfo_t* info, const char
 {
     lv_obj_t* cont = lv_obj_create(par);
     lv_obj_remove_style_all(cont);
-    lv_obj_set_size(cont, 100, 55);
+    lv_obj_set_size(cont, 50, 40);
     lv_obj_set_flex_flow(cont, LV_FLEX_FLOW_COLUMN);
     lv_obj_set_flex_align(
         cont,
@@ -171,6 +182,70 @@ void CalibrateView::SubInfoGrp_Create(lv_obj_t* par, SubInfo_t* info, const char
 
     info->cont = cont;
 }
+
+void CalibrateView::BarInfoGrp_Create(lv_obj_t* par, BarInfo_t* info)
+{
+    lv_obj_t* cont = lv_obj_create(par);
+    lv_obj_remove_style_all(cont);
+    lv_obj_set_size(cont, 100, 100);
+    lv_obj_set_flex_flow(cont, LV_FLEX_FLOW_ROW);
+    lv_obj_set_flex_align(
+        cont,
+        LV_FLEX_ALIGN_SPACE_AROUND,
+        LV_FLEX_ALIGN_CENTER,
+        LV_FLEX_ALIGN_CENTER
+    );
+
+    lv_obj_t* bar = lv_bar_create(cont);
+
+    // lv_obj_set_pos(bar1, 57, 5);
+    lv_obj_set_size(bar, 8, 90);
+    // lv_obj_set_style_anim_duration(bar, 1000, 0);
+    lv_bar_set_mode(bar, LV_BAR_MODE_SYMMETRICAL);
+    lv_bar_set_range(bar, -100, 100);
+    lv_bar_set_value(bar, 50, LV_ANIM_OFF);
+ 
+    //Write style for main_bar_2, Part: LV_PART_MAIN, State: LV_STATE_DEFAULT.
+    lv_obj_set_style_bg_opa(bar, 60, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_bg_color(bar, lv_color_hex(0xff931e), LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_bg_grad_dir(bar, LV_GRAD_DIR_NONE, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_radius(bar, 10, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_shadow_width(bar, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+
+    //Write style for main_bar_2, Part: LV_PART_INDICATOR, State: LV_STATE_DEFAULT.
+    lv_obj_set_style_bg_opa(bar, 255, LV_PART_INDICATOR|LV_STATE_DEFAULT);
+    lv_obj_set_style_bg_color(bar, lv_color_hex(0xff931e), LV_PART_INDICATOR|LV_STATE_DEFAULT);
+    lv_obj_set_style_bg_grad_dir(bar, LV_GRAD_DIR_NONE, LV_PART_INDICATOR|LV_STATE_DEFAULT);
+    lv_obj_set_style_radius(bar, 10, LV_PART_INDICATOR|LV_STATE_DEFAULT);
+
+
+    info->bar[0] = bar;
+
+    bar = lv_bar_create(cont);
+    // lv_obj_set_pos(bar1, 57, 5);
+    lv_obj_set_size(bar, 8, 90);
+    // lv_obj_set_style_anim_duration(bar, 1000, 0);
+    lv_bar_set_mode(bar, LV_BAR_MODE_SYMMETRICAL);
+    lv_bar_set_range(bar, -100, 100);
+    lv_bar_set_value(bar, 50, LV_ANIM_OFF);
+ 
+    //Write style for main_bar_2, Part: LV_PART_MAIN, State: LV_STATE_DEFAULT.
+    lv_obj_set_style_bg_opa(bar, 60, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_bg_color(bar, lv_color_hex(0xff931e), LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_bg_grad_dir(bar, LV_GRAD_DIR_NONE, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_radius(bar, 10, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_shadow_width(bar, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+
+    //Write style for main_bar_2, Part: LV_PART_INDICATOR, State: LV_STATE_DEFAULT.
+    lv_obj_set_style_bg_opa(bar, 255, LV_PART_INDICATOR|LV_STATE_DEFAULT);
+    lv_obj_set_style_bg_color(bar, lv_color_hex(0xff931e), LV_PART_INDICATOR|LV_STATE_DEFAULT);
+    lv_obj_set_style_bg_grad_dir(bar, LV_GRAD_DIR_NONE, LV_PART_INDICATOR|LV_STATE_DEFAULT);
+    lv_obj_set_style_radius(bar, 10, LV_PART_INDICATOR|LV_STATE_DEFAULT);
+
+    info->bar[1] = bar;
+    info->cont = cont;
+}
+
 
 void CalibrateView::BtnCont_Create(lv_obj_t* par)
 {

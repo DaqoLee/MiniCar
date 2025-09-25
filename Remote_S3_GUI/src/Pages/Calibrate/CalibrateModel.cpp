@@ -15,7 +15,7 @@ void CalibrateModel::Init()
     account->Subscribe("Calibrate");
     account->SetEventCallback(onEvent);
 
-    // SetRemoteMode(DataProc::OperationMode_t::MODE_Calibrate);
+    SetRemoteMode(DataProc::OperationMode_t::MODE_CALIBRATE,DataProc::CalibrateMode_t::READ_MID);
 }
 
 void CalibrateModel::Deinit()
@@ -37,15 +37,27 @@ bool CalibrateModel::GetGPSReady()
     return (gps.satellites > 0);
 }
 
-void CalibrateModel::GetDeviceInfo(char name[32])
+void CalibrateModel::GetCalibrateInfo(uint16_t data[12])
 {
 
-    HAL::device_info_t device_info = { 0 };
+    HAL::Joystick_Calibrate_t Calibrate_info[2] = { 0 };
 
-    account->Pull("Calibrate", &device_info, sizeof(device_info));
+    account->Pull("Calibrate", Calibrate_info, sizeof(Calibrate_info));
 
-    strncpy(name, device_info.name,15);
-    name[16]= '\0';
+    data[0] = Calibrate_info[0].max_x;
+    data[1] = Calibrate_info[0].max_y;
+    data[2] = Calibrate_info[1].max_x;
+    data[3] = Calibrate_info[1].max_y;
+    data[4] = Calibrate_info[0].mid_x;
+    data[5] = Calibrate_info[0].mid_y;
+
+    data[6] = Calibrate_info[1].mid_x;
+    data[7] = Calibrate_info[1].mid_y;
+    data[8] = Calibrate_info[0].min_x;
+    data[9] = Calibrate_info[0].min_y;
+    data[10] = Calibrate_info[1].min_x;
+    data[11] = Calibrate_info[1].min_y;
+
 }
 
 int CalibrateModel::onEvent(Account* account, Account::EventParam_t* param)
@@ -127,12 +139,12 @@ void CalibrateModel::SetStatusBarStyle(DataProc::StatusBar_Style_t style)
     account->Notify("StatusBar", &info, sizeof(info));
 }
 
-void CalibrateModel::SetRemoteMode(DataProc::OperationMode_t mode)
+void CalibrateModel::SetRemoteMode(DataProc::OperationMode_t mode, DataProc::CalibrateMode_t step )
 {
     DataProc::Remote_Info_t info;
     DATA_PROC_INIT_STRUCT(info);
 
     info.mode = mode;
-   
+    info.step = step;
     account->Notify("Remote", &info, sizeof(info));
 }

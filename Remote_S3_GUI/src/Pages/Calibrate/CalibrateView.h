@@ -13,6 +13,12 @@ public:
     typedef struct
     {
         lv_obj_t* cont;
+        lv_obj_t* bar[2];
+        // lv_obj_t* bar2;
+    } BarInfo_t;
+    typedef struct
+    {
+        lv_obj_t* cont;
         lv_obj_t* lableValue;
         lv_obj_t* lableUnit;
     } SubInfo_t;
@@ -25,10 +31,8 @@ public:
             lv_obj_t* cont;
             // lv_obj_t* labelSpeed;
             // lv_obj_t* labelUint;
-            lv_obj_t* labelStatus;
-            lv_obj_t* batteryBarLeft;
-            lv_obj_t* batteryBarRight;
-            SubInfo_t labelInfoGrp[4];
+            BarInfo_t barInfoGrp[2];
+            SubInfo_t labelInfoGrp[12];
         } topInfo;
 
           struct
@@ -43,7 +47,7 @@ public:
             lv_obj_t* cont;
             lv_obj_t* btnLeft;
             lv_obj_t* btnRight;
-            SubInfo_t labelInfoGrp[4];
+            // SubInfo_t labelInfoGrp[4];
         } bottomInfo;
 
         struct
@@ -64,10 +68,11 @@ public:
 private:
     void TopInfo_Create(lv_obj_t* par);
     void BottomInfo_Create(lv_obj_t* par);
-    void SubInfoGrp_Create(lv_obj_t* par, SubInfo_t* info, const char* unitText);
+    void BarInfoGrp_Create(lv_obj_t* par, BarInfo_t* info);
     void BtnCont_Create(lv_obj_t* par);
     lv_obj_t* Btn_Create(lv_obj_t* par, const void* img_src, lv_coord_t x_ofs);
     lv_obj_t* JoyBtn_Create(lv_obj_t* par, lv_coord_t x_ofs);
+    void SubInfoGrp_Create(lv_obj_t* par, SubInfo_t* info, const char* unitText);
 };
 
 }

@@ -23,8 +23,8 @@ void Calibrate::onViewLoad()
 
     AttachEvent(_root);
     AttachEvent(View.ui.bottomInfo.cont);
-    // AttachEvent(View.ui.btnCont.btnRec);
-    // AttachEvent(View.ui.btnCont.btnMenu);
+    AttachEvent(View.ui.bottomInfo.btnLeft);
+    AttachEvent(View.ui.bottomInfo.btnRight);
 }
 
 void Calibrate::onViewDidLoad()
@@ -41,6 +41,8 @@ void Calibrate::onViewWillAppear()
     lv_group_set_wrap(group, true);
 
     lv_group_add_obj(group, View.ui.bottomInfo.cont);
+    lv_group_add_obj(group, View.ui.bottomInfo.btnLeft);
+    lv_group_add_obj(group, View.ui.bottomInfo.btnRight);
     lv_group_focus_obj(View.ui.bottomInfo.cont);
 
     // if (lastFocus)
@@ -99,14 +101,17 @@ void Calibrate::AttachEvent(lv_obj_t* obj)
 void Calibrate::Update()
 {
 
-    char name[32] = {0};
-    Model.GetDeviceInfo(name);
-   // for (int i = 0; i < 4; i++)
-   if (name[0])
+    static uint16_t data[12] = {0}
+    ;
+    Model.GetCalibrateInfo(data);
+    for (int i = 0; i < 12; i++)
     {
-        lv_label_set_text(
-        View.ui.topInfo.labelInfoGrp[0].lableValue,name);
+        lv_label_set_text_fmt(
+        View.ui.topInfo.labelInfoGrp[i].lableValue,
+        "%d",data[i]);   
     }
+
+    
 }
 
 void Calibrate::onTimerUpdate(lv_timer_t* timer)
@@ -122,9 +127,23 @@ void Calibrate::onBtnClicked(lv_obj_t* btn)
     // {
     //     _Manager->Push("Pages/LiveMap");
     // }
-    // else if (btn == View.ui.btnCont.btnMenu || btn == _root)
+    if (btn == View.ui.bottomInfo.cont)
     {
         _Manager->Pop();
+    }
+    else if (btn == View.ui.bottomInfo.btnLeft)
+    {
+        LV_LOG_INFO("btnLeft");
+        Model.SetRemoteMode(DataProc::OperationMode_t::MODE_CALIBRATE,DataProc::CalibrateMode_t::READ_MAX_MIN);
+    }
+    else if (btn == View.ui.bottomInfo.btnRight)
+    {
+        LV_LOG_INFO("btnRight");
+        Model.SetRemoteMode(DataProc::OperationMode_t::MODE_CALIBRATE,DataProc::CalibrateMode_t::SAVE);
+    }
+    else
+    {
+        LV_LOG_INFO("btn");
     }
 }
 
@@ -214,7 +233,7 @@ void Calibrate::onEvent(lv_event_t* event)
     //     }
     // }
 
-    if (obj == instance->View.ui.bottomInfo.cont && code == LV_EVENT_SHORT_CLICKED)
+    if (code == LV_EVENT_SHORT_CLICKED)
     {
         instance->onBtnClicked(obj);  // 仅该场景执行Pop
     }

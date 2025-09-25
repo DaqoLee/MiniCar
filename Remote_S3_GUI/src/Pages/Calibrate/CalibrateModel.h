@@ -26,7 +26,7 @@ public:
     void Deinit();
 
     bool GetGPSReady();
-    void GetDeviceInfo(char name[32]);
+    void GetCalibrateInfo(uint16_t data[12]);
     float GetSpeed()
     {
         return sportStatusInfo.speedKph;
@@ -40,7 +40,7 @@ public:
     void RecorderCommand(RecCmd_t cmd);
     void PlayMusic(const char* music);
     void SetStatusBarStyle(DataProc::StatusBar_Style_t style);
-    void SetRemoteMode(DataProc::OperationMode_t mode);
+    void SetRemoteMode(DataProc::OperationMode_t mode, DataProc::CalibrateMode_t step );
 private:
     Account* account;
 

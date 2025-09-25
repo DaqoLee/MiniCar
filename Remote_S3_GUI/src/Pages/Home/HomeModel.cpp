@@ -1,5 +1,5 @@
 #include "HomeModel.h"
-
+#include <Arduino.h>   
 using namespace Page;
  static uint8_t Mac[] = {0x0C, 0x4E, 0xA0, 0x21, 0x29, 0x3C};
 void HomeModel::Init()
@@ -43,10 +43,11 @@ void HomeModel::GetJoystickInfo(uint16_t data[4])
     HAL::Joystick_Info_t joystick = { 0 };
 
     account->Pull("Joystick", &joystick, sizeof(joystick));
-    data[0] = joystick.x1;
-    data[1] = joystick.y1;
-    data[2] = joystick.x2;
-    data[3] = joystick.y2;
+    data[0] = joystick.left_x;
+    data[1] = joystick.left_y;
+    data[2] = joystick.right_x;
+    data[3] = joystick.right_y;
+    // Serial.printf(" %d %d %d %d \r\n",joystick.left_x,joystick.left_y,joystick.right_x,joystick.right_y );
   
 }
 

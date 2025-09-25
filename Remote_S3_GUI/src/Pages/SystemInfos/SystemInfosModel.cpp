@@ -117,10 +117,10 @@ void SystemInfosModel::GetIMUInfo(
         info,
         len,
         "%d\n%d\n%d\n%d",
-        joystick.x1,
-        joystick.y1,
-        joystick.x2,
-        joystick.y2
+        joystick.left_x,
+        joystick.left_y,
+        joystick.right_x,
+        joystick.right_y
     );
 }
 

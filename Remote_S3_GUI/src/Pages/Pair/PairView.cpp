@@ -71,7 +71,7 @@ void PairView::TopInfo_Create(lv_obj_t* par)
 
     const char* unitText[4] =
     {
-        " ",
+        "device ",
         " ",
         " ",
         " "
@@ -93,31 +93,29 @@ void PairView::BottomInfo_Create(lv_obj_t* par)
     lv_obj_remove_style_all(cont);
 
     
-    // lv_obj_set_style_bg_color(cont, lv_color_black(), 0);
-    lv_obj_set_style_bg_color(cont, lv_color_hex(0x111111), 0);//lv_color_hex(0x111111)
+    lv_obj_set_style_bg_color(cont, lv_color_black(), 0);
+    // lv_obj_set_style_bg_color(cont, lv_color_hex(0x111111), 0);//lv_color_hex(0x111111)
     lv_obj_set_size(cont, LV_HOR_RES, 90);
     lv_obj_align(cont, LV_ALIGN_BOTTOM_MID, 0, 0);
-    
+
     // lv_obj_set_style_border_color(cont,  lv_color_hex(0xff931e), 0);//lv_color_hex(0xff931e)
     // lv_obj_set_style_border_side(cont, LV_BORDER_SIDE_FULL, 0);
     // lv_obj_set_style_border_width(cont, 1, 0);
     // lv_obj_set_style_border_post(cont, true, 0);
-     lv_obj_set_style_radius(cont, 15, 0);
+    //  lv_obj_set_style_radius(cont, 15, 0);
     // lv_obj_align(cont, LV_ALIGN_TOP_MID, 0, 120);
 
-    // lv_obj_set_flex_flow(cont, LV_FLEX_FLOW_ROW_WRAP);
-
-    // lv_obj_set_flex_align(
-    //     cont,
-    //     LV_FLEX_ALIGN_SPACE_EVENLY,
-    //     LV_FLEX_ALIGN_CENTER,
-    //     LV_FLEX_ALIGN_CENTER
-    // );
+    lv_obj_t* label = lv_label_create(cont);
+    lv_obj_set_style_text_font(label, ResourcePool::GetFont("bahnschrift_17"), 0);
+    lv_obj_set_style_text_color(label, lv_color_white(), 0);
+    lv_label_set_long_mode(label, LV_LABEL_LONG_WRAP);
+    lv_obj_set_width(label, 220);
+    lv_obj_align(label, LV_ALIGN_CENTER, 0, 0);
+    lv_label_set_text(label, "Press and hold the button on the bottom of the car for 7 seconds in the power-off state.");
+    lv_obj_set_style_text_align(label, LV_TEXT_ALIGN_LEFT, 0);
+    ui.bottomInfo.label = label;
 
     ui.bottomInfo.cont = cont;
-
-    ui.bottomInfo.btnLeft = JoyBtn_Create(cont, -70);
-    ui.bottomInfo.btnRight = JoyBtn_Create(cont, 70);
 
 }
 
@@ -149,7 +147,7 @@ void PairView::SubInfoGrp_Create(lv_obj_t* par, SubInfo_t* info, const char* uni
 {
     lv_obj_t* cont = lv_obj_create(par);
     lv_obj_remove_style_all(cont);
-    lv_obj_set_size(cont, 100, 55);
+    lv_obj_set_size(cont, 200, 80);
     lv_obj_set_flex_flow(cont, LV_FLEX_FLOW_COLUMN);
     lv_obj_set_flex_align(
         cont,
@@ -161,13 +159,14 @@ void PairView::SubInfoGrp_Create(lv_obj_t* par, SubInfo_t* info, const char* uni
     lv_obj_t* label = lv_label_create(cont);
     lv_obj_set_style_text_font(label, ResourcePool::GetFont("bahnschrift_17"), 0);
     lv_obj_set_style_text_color(label, lv_color_white(), 0);
+    lv_label_set_text(label, "Pairing...");
     info->lableValue = label;
 
-    // label = lv_label_create(cont);
-    // lv_obj_set_style_text_font(label, ResourcePool::GetFont("bahnschrift_13"), 0);
-    // lv_obj_set_style_text_color(label, lv_color_hex(0xb3b3b3), 0);
-    // lv_label_set_text(label, unitText);
-    // info->lableUnit = label;
+    label = lv_label_create(cont);
+    lv_obj_set_style_text_font(label, ResourcePool::GetFont("bahnschrift_13"), 0);
+    lv_obj_set_style_text_color(label, lv_color_hex(0xb3b3b3), 0);
+    lv_label_set_text(label, unitText);
+    info->lableUnit = label;
 
     info->cont = cont;
 }

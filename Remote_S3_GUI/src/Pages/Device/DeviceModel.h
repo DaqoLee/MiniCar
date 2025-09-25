@@ -1,5 +1,5 @@
-#ifndef __Device_MODEL_H
-#define __Device_MODEL_H
+#ifndef __DEVICE_MODEL_H
+#define __DEVICE_MODEL_H
 
 #include "Common/DataProc/DataProc.h"
 
@@ -9,43 +9,59 @@ namespace Page
 class DeviceModel
 {
 public:
-    typedef enum
-    {
-        REC_START    = DataProc::RECORDER_CMD_START,
-        REC_PAUSE    = DataProc::RECORDER_CMD_PAUSE,
-        REC_CONTINUE = DataProc::RECORDER_CMD_CONTINUE,
-        REC_STOP     = DataProc::RECORDER_CMD_STOP,
-        REC_READY_STOP
-    } RecCmd_t;
-
-public:
-    HAL::SportStatus_Info_t sportStatusInfo;
-
-public:
     void Init();
     void Deinit();
 
-    bool GetGPSReady();
-    void GetDeviceInfo(char name[32]);
-    float GetSpeed()
-    {
-        return sportStatusInfo.speedKph;
-    }
+    void GetSportInfo(
+        float* trip,
+        char* time, uint32_t len,
+        float* maxSpd
+    );
 
-    float GetAvgSpeed()
-    {
-        return sportStatusInfo.speedAvgKph;
-    }
+    void GetGPSInfo(
+        float* lat,
+        float* lng,
+        float* alt,
+        char* utc, uint32_t len,
+        float* course,
+        float* speed
+    );
 
-    void RecorderCommand(RecCmd_t cmd);
-    void PlayMusic(const char* music);
+    void GetMAGInfo(
+        float* dir,
+        int* x,
+        int* y,
+        int* z
+    );
+
+    void GetIMUInfo(
+        int* step,
+        char* info, uint32_t len
+    );
+
+    void GetRTCInfo(
+        char* dateTime, uint32_t len
+    );
+
+    void GetBatteryInfo(
+        int* usage,
+        float* voltage,
+        char* state, uint32_t len
+    );
+
+    void GetStorageInfo(
+        bool* detect,
+        const char** type,
+        char* size, uint32_t len
+    );
+
     void SetStatusBarStyle(DataProc::StatusBar_Style_t style);
     void SetRemoteMode(DataProc::OperationMode_t mode);
 private:
     Account* account;
 
 private:
-    static int onEvent(Account* account, Account::EventParam_t* param);
+
 };
 
 }

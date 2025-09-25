@@ -55,13 +55,21 @@ typedef struct
 /* IMU */
 typedef struct
 {
-    int16_t x1; 
-    int16_t y1; 
-    int16_t x2; 
-    int16_t y2; 
+    int16_t  left_x;
+    int16_t  left_y;
+    int16_t  right_x; 
+    int16_t  right_y; 
 } Joystick_Info_t;
 
+typedef struct {
+  uint16_t max_x;
+  uint16_t mid_x;
+  uint16_t min_x;
 
+  uint16_t max_y;
+  uint16_t mid_y;
+  uint16_t min_y;
+} Joystick_Calibrate_t;
 
 /* SportStatus */
 typedef struct
@@ -117,14 +125,27 @@ typedef struct {
 } device_info_t;
 
 typedef enum  {
-  MODE_JOYSTICK,  // 摇杆控制模式
-  MODE_OTA,        // OTA更新模式
-  MODE_PAIR
+    MODE_JOYSTICK,  // 摇杆控制模式
+    MODE_CALIBRATE,  
+    MODE_PAIR,
+    MODE_OTA,      // OTA更新模式
+    MODE_MAX
 } OperationMode_t;
+
+typedef enum  {
+  READ_MID,  // 摇杆控制模式
+  READ_MAX_MIN,
+  SAVE,
+  EXIT,        // OTA更新模式
+  CALI_MAX
+}CalibrateMode_t;
+
 typedef struct struct_ack {
   uint8_t mode; // 确认的消息ID
   uint8_t battery;
 } struct_ack;
+
+
 
 }
 

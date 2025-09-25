@@ -1037,11 +1037,18 @@ void PowerTask(void *pvParameters) {
     delay(5);
   }
 }
-
+void JoystickTask(void *pvParameters) {
+  static uint16_t count = 0;
+  while (1) {
+    HAL::Joystick_Update();
+    HAL::Remote_Update();
+    delay(5);
+  }
+}
 void setup()
 {
   Serial.begin( 115200 ); /* prepare for possible serial debug */
-
+  Serial.setTimeout(0);
   String LVGL_Arduino = "Hello Arduino! ";
   LVGL_Arduino += String('V') + lv_version_major() + "." + lv_version_minor() + "." + lv_version_patch();
 
@@ -1073,17 +1080,19 @@ void setup()
   lv_disp_drv_register(&disp_drv);
 
   HAL::HAL_Init();
+  delay(200);
   lv_port_indev_init();
   App_Init();
 
   xTaskCreate(PowerTask, "PowerTask", 4096, NULL, 1, NULL);
+  xTaskCreate(JoystickTask, "JoystickTask", 4096, NULL, 1, NULL);
 
   Serial.println( "Setup done" );
 }
 
 void loop()
 {
-   
+ 
   lv_timer_handler(); /* let the GUI do its work */
   delay( 5 );
 }

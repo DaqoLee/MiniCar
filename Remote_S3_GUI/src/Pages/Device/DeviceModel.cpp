@@ -1,21 +1,24 @@
 #include "DeviceModel.h"
+#include <stdio.h>
 
 using namespace Page;
 
 void DeviceModel::Init()
 {
     account = new Account("DeviceModel", DataProc::Center(), 0, this);
-    account->Subscribe("SportStatus");
-    account->Subscribe("Recorder");
-    account->Subscribe("StatusBar");
-    account->Subscribe("GPS");
-    account->Subscribe("MusicPlayer");
-    account->Subscribe("Joystick");
-    account->Subscribe("Remote");
-    account->Subscribe("Device");
-    account->SetEventCallback(onEvent);
 
-    // SetRemoteMode(DataProc::OperationMode_t::MODE_Device);
+    account->Subscribe("SportStatus");
+    account->Subscribe("GPS");
+    account->Subscribe("MAG");
+    account->Subscribe("IMU");
+    account->Subscribe("Joystick");
+    account->Subscribe("Clock");
+    account->Subscribe("Power");
+    account->Subscribe("Storage");
+    account->Subscribe("StatusBar");
+    account->Subscribe("Remote");
+
+    SetRemoteMode(DataProc::OperationMode_t::MODE_OTA);
 }
 
 void DeviceModel::Deinit()
@@ -27,93 +30,148 @@ void DeviceModel::Deinit()
     }
 }
 
-bool DeviceModel::GetGPSReady()
+void DeviceModel::GetSportInfo(
+    float* trip,
+    char* time, uint32_t len,
+    float* maxSpd
+)
 {
-    HAL::GPS_Info_t gps;
-    if(account->Pull("GPS", &gps, sizeof(gps)) != Account::RES_OK)
-    {
-        return false;
-    }
-    return (gps.satellites > 0);
+    HAL::SportStatus_Info_t sport = { 0 };
+    account->Pull("SportStatus", &sport, sizeof(sport));
+    *trip = sport.totalDistance / 1000;
+    // DataProc::MakeTimeString(sport.totalTime, time, len);
+    *maxSpd = sport.speedMaxKph;
 }
 
-void DeviceModel::GetDeviceInfo(char name[32])
+void DeviceModel::GetGPSInfo(
+    float* lat,
+    float* lng,
+    float* alt,
+    char* utc, uint32_t len,
+    float* course,
+    float* speed
+)
 {
-
-    HAL::device_info_t device_info = { 0 };
-
-    account->Pull("Device", &device_info, sizeof(device_info));
-
-    strncpy(name, device_info.name,15);
-    name[16]= '\0';
+    HAL::GPS_Info_t gps = { 0 };
+    account->Pull("GPS", &gps, sizeof(gps));
+    *lat = (float)gps.latitude;
+    *lng = (float)gps.longitude;
+    *alt = gps.altitude;
+    snprintf(
+        utc, len,
+        "%d-%d-%d\n%02d:%02d:%02d",
+        gps.clock.year,
+        gps.clock.month,
+        gps.clock.day,
+        gps.clock.hour,
+        gps.clock.minute,
+        gps.clock.second
+    );
+    *course = gps.course;
+    *speed = gps.speed;
 }
 
-int DeviceModel::onEvent(Account* account, Account::EventParam_t* param)
+void DeviceModel::GetMAGInfo(
+    float* dir,
+    int* x,
+    int* y,
+    int* z
+)
 {
-    if (param->event != Account::EVENT_PUB_PUBLISH)
-    {
-        return Account::RES_UNSUPPORTED_REQUEST;
-    }
+    HAL::MAG_Info_t mag = { 0 };
 
-    if (strcmp(param->tran->ID, "SportStatus") != 0
-            || param->size != sizeof(HAL::SportStatus_Info_t))
-    {
-        return Account::RES_PARAM_ERROR;
-    }
+    account->Pull("MAG", &mag, sizeof(mag));
 
-    DeviceModel* instance = (DeviceModel*)account->UserData;
-    memcpy(&(instance->sportStatusInfo), param->data_p, param->size);
-
-    return Account::RES_OK;
+    *dir = 0;
+    *x = mag.x;
+    *y = mag.y;
+    *z = mag.z;
 }
 
-void DeviceModel::RecorderCommand(RecCmd_t cmd)
+void DeviceModel::GetIMUInfo(
+    int* step,
+    char* info, uint32_t len
+)
 {
-    if (cmd != REC_READY_STOP)
-    {
-        DataProc::Recorder_Info_t recInfo;
-        DATA_PROC_INIT_STRUCT(recInfo);
-        recInfo.cmd = (DataProc::Recorder_Cmd_t)cmd;
-        recInfo.time = 1000;
-        account->Notify("Recorder", &recInfo, sizeof(recInfo));
-    }
+    // HAL::IMU_Info_t imu = { 0 };
 
-    DataProc::StatusBar_Info_t statInfo;
-    DATA_PROC_INIT_STRUCT(statInfo);
-    statInfo.cmd = DataProc::STATUS_BAR_CMD_SET_LABEL_REC;
+    // account->Pull("IMU", &imu, sizeof(imu));
+    // *step = imu.steps;
+    // snprintf(
+    //     info,
+    //     len,
+    //     "%d\n%d\n%d\n%d\n%d\n%d",
+    //     imu.ax,
+    //     imu.ay,
+    //     imu.az,
+    //     imu.gx,
+    //     imu.gy,
+    //     imu.gz
+    // );
 
-    switch (cmd)
-    {
-    case REC_START:
-    case REC_CONTINUE:
-        statInfo.param.labelRec.show = true;
-        statInfo.param.labelRec.str = "REC";
-        break;
-    case REC_PAUSE:
-        statInfo.param.labelRec.show = true;
-        statInfo.param.labelRec.str = "PAUSE";
-        break;  
-    case REC_READY_STOP:
-        statInfo.param.labelRec.show = true;
-        statInfo.param.labelRec.str = "STOP";
-        break;
-    case REC_STOP:
-        statInfo.param.labelRec.show = false;
-        break;
-    default:
-        break;
-    }
+    HAL::Joystick_Info_t joystick = { 0 };
 
-    account->Notify("StatusBar", &statInfo, sizeof(statInfo));
+    account->Pull("Joystick", &joystick, sizeof(joystick));
+  
+    snprintf(
+        info,
+        len,
+        "%d\n%d\n%d\n%d",
+        joystick.left_x,
+        joystick.left_y,
+        joystick.right_x,
+        joystick.right_y
+    );
 }
 
-void DeviceModel::PlayMusic(const char* music)
+void DeviceModel::GetRTCInfo(
+    char* dateTime, uint32_t len
+)
 {
-    DataProc::MusicPlayer_Info_t info;
-    DATA_PROC_INIT_STRUCT(info);
+    HAL::Clock_Info_t clock = { 0 };
+    account->Pull("Clock", &clock, sizeof(clock));
+    snprintf(
+        dateTime,
+        len,
+        "%d-%d-%d\n%02d:%02d:%02d",
+        clock.year,
+        clock.month,
+        clock.day,
+        clock.hour,
+        clock.minute,
+        clock.second
+    );
+}
 
-    info.music = music;
-    account->Notify("MusicPlayer", &info, sizeof(info));
+void DeviceModel::GetBatteryInfo(
+    int* usage,
+    float* voltage,
+    char* state, uint32_t len
+)
+{
+    HAL::Power_Info_t power = { 0 };
+    account->Pull("Power", &power, sizeof(power));
+    *usage = power.usage;
+    *voltage = power.voltage / 1000.0f;
+    strncpy(state, power.isCharging ? "CHARGE" : "DISCHARGE", len);
+    state[len - 1] = '\0';
+}
+
+void DeviceModel::GetStorageInfo(
+    bool* detect,
+    const char** type,
+    char* usage, uint32_t len
+)
+{
+    DataProc::Storage_Basic_Info_t info = { 0 };
+    account->Pull("Storage", &info, sizeof(info));
+    *detect = info.isDetect;
+    *type = info.type;
+    snprintf(
+        usage, len,
+        "%0.1f GB",
+        info.totalSizeMB / 1024.0f
+    );
 }
 
 void DeviceModel::SetStatusBarStyle(DataProc::StatusBar_Style_t style)

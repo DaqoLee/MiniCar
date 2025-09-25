@@ -28,7 +28,7 @@ public:
             lv_obj_t* labelStatus;
             lv_obj_t* batteryBarLeft;
             lv_obj_t* batteryBarRight;
-            SubInfo_t labelInfoGrp[4];
+            SubInfo_t labelInfoGrp[1];
         } topInfo;
 
           struct
@@ -43,7 +43,7 @@ public:
             lv_obj_t* cont;
             lv_obj_t* btnLeft;
             lv_obj_t* btnRight;
-            SubInfo_t labelInfoGrp[4];
+            lv_obj_t*  label;
         } bottomInfo;
 
         struct

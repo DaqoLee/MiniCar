@@ -16,7 +16,7 @@ static int onEvent(Account* account, Account::EventParam_t* param)
     DataProc::Remote_Info_t* info = (DataProc::Remote_Info_t*)param->data_p;
 
     HAL::Remote_SetMode((HAL::OperationMode_t)info->mode);
-
+    HAL::Remote_SetCalibrateStep((HAL::CalibrateMode_t)info->step);
     return Account::RES_OK;
 }
 
@@ -41,6 +41,14 @@ DATA_PROC_INIT_DEF(Pair)
     HAL::Pair_SetCommitCallback([](void* info, void* userData){
         Account* account = (Account*)userData;
         return account->Commit(info, sizeof(HAL::device_info_t));
+    }, account);
+}
+
+DATA_PROC_INIT_DEF(Calibrate)
+{
+    HAL::Calibrate_SetCommitCallback([](void* info, void* userData){
+        Account* account = (Account*)userData;
+        return account->Commit(info, sizeof(HAL::Joystick_Calibrate_t)*2);
     }, account);
 }
 
