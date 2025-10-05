@@ -52,3 +52,11 @@ DATA_PROC_INIT_DEF(Calibrate)
     }, account);
 }
 
+DATA_PROC_INIT_DEF(CarPower)
+{
+    HAL::CarPower_SetCommitCallback([](void* info, void* userData){
+        Account* account = (Account*)userData;
+        return account->Commit(info, sizeof(uint8_t));
+    }, account);
+}
+

@@ -25,8 +25,8 @@
 #include "Common/DataProc/DataProc.h"
 #include "Utils/lv_anim_label/lv_anim_label.h"
 
-#define BATT_USAGE_HEIGHT (lv_obj_get_style_height(ui.battery.img, 0) - 6)
-#define BATT_USAGE_WIDTH  (lv_obj_get_style_width(ui.battery.img, 0) - 4)
+#define BATT_USAGE_HEIGHT (lv_obj_get_style_height(ui.carBattery.img, 0) - 6)
+#define BATT_USAGE_WIDTH  (lv_obj_get_style_width(ui.carBattery.img, 0) - 4)
 
 #define STATUS_BAR_HEIGHT 25
 
@@ -38,13 +38,20 @@ struct
 {
     lv_obj_t* cont;
 
+    // struct
+    // {
+    //     lv_obj_t* img;
+    //     lv_obj_t* label;
+    // } satellite;
+
     struct
     {
         lv_obj_t* img;
+        lv_obj_t* objUsage;
         lv_obj_t* label;
-    } satellite;
+    } carBattery;
 
-    lv_obj_t* imgSD;
+    // lv_obj_t* imgSD;
 
     lv_obj_t* labelClock;
 
@@ -140,16 +147,16 @@ static lv_obj_t* StatusBar_RecAnimLabelCreate(lv_obj_t* par)
 static void StatusBar_Update(lv_timer_t* timer)
 {
     /* satellite */
-    HAL::GPS_Info_t gps;
-    if(actStatusBar->Pull("GPS", &gps, sizeof(gps)) == Account::RES_OK)
+    uint8_t carPower;
+    if(actStatusBar->Pull("CarPower", &carPower, sizeof(carPower)) == Account::RES_OK)
     {
-        lv_label_set_text_fmt(ui.satellite.label, "%d", gps.satellites);
+        lv_label_set_text_fmt(ui.carBattery.label, "%d",carPower);
     }
 
     DataProc::Storage_Basic_Info_t sdInfo;
     if(actStatusBar->Pull("Storage", &sdInfo, sizeof(sdInfo)) == Account::RES_OK)
     {
-        sdInfo.isDetect ? lv_obj_clear_state(ui.imgSD, LV_STATE_DISABLED) : lv_obj_add_state(ui.imgSD, LV_STATE_DISABLED);
+        // sdInfo.isDetect ? lv_obj_clear_state(ui.imgSD, LV_STATE_DISABLED) : lv_obj_add_state(ui.imgSD, LV_STATE_DISABLED);
     }
 
     /* clock */
@@ -168,6 +175,7 @@ static void StatusBar_Update(lv_timer_t* timer)
 
     bool Is_BattCharging = power.isCharging;
     lv_obj_t* contBatt = ui.battery.objUsage;
+    lv_obj_t* CarContBatt = ui.carBattery.objUsage;
     static bool Is_BattChargingAnimActive = false;
     if(Is_BattCharging)
     {
@@ -187,6 +195,9 @@ static void StatusBar_Update(lv_timer_t* timer)
         }
         lv_coord_t height = lv_map(power.usage, 0, 100, 0, BATT_USAGE_HEIGHT);
         lv_obj_set_height(contBatt, height);
+
+        height = lv_map(carPower, 0, 100, 0, BATT_USAGE_HEIGHT);
+        lv_obj_set_height(CarContBatt, height);
     }
 }
 
@@ -280,20 +291,34 @@ lv_obj_t* Page::StatusBar_Create(lv_obj_t* par)
     lv_style_set_text_color(&style_label, lv_color_white());
     lv_style_set_text_font(&style_label, ResourcePool::GetFont("bahnschrift_17"));
 
-    /* satellite */
+
     lv_obj_t* img = lv_img_create(cont);
-    lv_img_set_src(img, ResourcePool::GetImage("satellite"));
+     /* carBattery */
+    img = lv_img_create(cont);
+    lv_img_set_src(img, ResourcePool::GetImage("battery"));
     lv_obj_align(img, LV_ALIGN_LEFT_MID, 14, 0);
-    ui.satellite.img = img;
+    lv_img_t* img_ext = (lv_img_t*)img;
+    lv_obj_set_size(img, img_ext->w, img_ext->h);
+    ui.carBattery.img = img;
+
+    lv_obj_t* obj = lv_obj_create(img);
+    lv_obj_remove_style_all(obj);
+    lv_obj_set_style_bg_color(obj, lv_color_white(), 0);
+    lv_obj_set_style_bg_opa(obj, LV_OPA_COVER, 0);
+    lv_obj_set_style_opa(obj, LV_OPA_COVER, 0);
+    lv_obj_set_size(obj, BATT_USAGE_WIDTH, BATT_USAGE_HEIGHT);
+    lv_obj_align(obj, LV_ALIGN_BOTTOM_MID, 0, -2);
+    ui.carBattery.objUsage = obj;
 
     lv_obj_t* label = lv_label_create(cont);
+    lv_obj_remove_style_all(label);
     lv_obj_add_style(label, &style_label, 0);
-    lv_obj_align_to(label, ui.satellite.img, LV_ALIGN_OUT_RIGHT_MID, 5, 0);
-    lv_label_set_text(label, "0");
-    ui.satellite.label = label;
+    lv_obj_align_to(label, ui.carBattery.img, LV_ALIGN_OUT_RIGHT_MID, 5, 0);
+    lv_label_set_text(label, "100");
+    ui.carBattery.label = label;
 
     /* sd card */
-    ui.imgSD = StatusBar_SdCardImage_Create(cont);
+    // ui.imgSD = StatusBar_SdCardImage_Create(cont);
 
     /* clock */
     label = lv_label_create(cont);
@@ -309,11 +334,11 @@ lv_obj_t* Page::StatusBar_Create(lv_obj_t* par)
     img = lv_img_create(cont);
     lv_img_set_src(img, ResourcePool::GetImage("battery"));
     lv_obj_align(img, LV_ALIGN_RIGHT_MID, -35, 0);
-    lv_img_t* img_ext = (lv_img_t*)img;
+    img_ext = (lv_img_t*)img;
     lv_obj_set_size(img, img_ext->w, img_ext->h);
     ui.battery.img = img;
 
-    lv_obj_t* obj = lv_obj_create(img);
+    obj = lv_obj_create(img);
     lv_obj_remove_style_all(obj);
     lv_obj_set_style_bg_color(obj, lv_color_white(), 0);
     lv_obj_set_style_bg_opa(obj, LV_OPA_COVER, 0);
@@ -323,9 +348,10 @@ lv_obj_t* Page::StatusBar_Create(lv_obj_t* par)
     ui.battery.objUsage = obj;
 
     label = lv_label_create(cont);
+    lv_obj_remove_style_all(label);
     lv_obj_add_style(label, &style_label, 0);
     lv_obj_align_to(label, ui.battery.img, LV_ALIGN_OUT_RIGHT_MID, 5, 0);
-    lv_label_set_text(label, "100%");
+    lv_label_set_text(label, "100");
     ui.battery.label = label;
 
     StatusBar_SetStyle(DataProc::STATUS_BAR_STYLE_TRANSP);
@@ -397,7 +423,7 @@ DATA_PROC_INIT_DEF(StatusBar)
     account->Subscribe("GPS");
     account->Subscribe("Power");
     account->Subscribe("Clock");
-    account->Subscribe("Storage");
+    account->Subscribe("CarPower");
     account->SetEventCallback(onEvent);
 
     actStatusBar = account;

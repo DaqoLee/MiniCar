@@ -81,6 +81,8 @@ static void* pairUserData = nullptr;              // 配对回调用户数据
 static CommitFunc_t CalibrateInfoCommitFunc = nullptr; // 校准信息更新回调
 static void* CalibrateUserData = nullptr;              // 校准回调用户数据
 
+static CommitFunc_t CarPowerInfoCommitFunc = nullptr; // 小车电量信息更新回调
+static void* CarPowerUserData = nullptr;              // 小车电量回调用户数据
 // NVS存储对象（不变）
 static Preferences nvsStorage;
 
@@ -330,6 +332,14 @@ void HAL::Calibrate_SetCommitCallback(CommitFunc_t func, void* userData)
     CalibrateUserData = userData;
 
 }
+
+void HAL::CarPower_SetCommitCallback(CommitFunc_t func, void* userData)
+{
+    CarPowerInfoCommitFunc = func;
+    CarPowerUserData = userData;
+
+}
+
 
 /**
  * @brief 保存配对设备信息到NVS
@@ -637,20 +647,25 @@ void OnDataRecv(const uint8_t* mac, const uint8_t* incomingData, int len)
         // 摇杆模式：处理接收端ACK反馈（不变）
         case MODE_JOYSTICK: {
             if (len != sizeof(struct_ack)) {
-                Serial.printf("[Recv] ACK数据长度错误：%d（应为%d）\n", len, sizeof(struct_ack));
+                Serial.printf("[Recv] ACK数据长度错误:%d(应为%d)\n", len, sizeof(struct_ack));
                 return;
             }
 
             struct_ack recvAck;
             memcpy(&recvAck, incomingData, sizeof(recvAck));
-            Serial.printf("[Recv] 接收端反馈：模式=%d，电量=%d%%\n", recvAck.mode, recvAck.battery);
+            
+            if ( CarPowerInfoCommitFunc != nullptr) {
+                CarPowerInfoCommitFunc(&recvAck.battery, CarPowerUserData);
+                //   Serial.println("[Calibrate]CalibrateInfoCommitFunc");
+            }
+            Serial.printf("[Recv] 接收端反馈：模式=%d,电量=%d%%\n", recvAck.mode, recvAck.battery);
             break;
         }
 
         // 配对模式：处理配对响应（不变，仅适配变量名）
         case MODE_PAIR: {
             if (len < sizeof(struct_pair)) {
-                Serial.printf("[Recv] 配对数据长度错误：%d（最小应为%d）\n", len, sizeof(struct_pair));
+                Serial.printf("[Recv] 配对数据长度错误：%d(最小应为%d)\n", len, sizeof(struct_pair));
                 return;
             }
 

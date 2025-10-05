@@ -1047,7 +1047,7 @@ void JoystickTask(void *pvParameters) {
 }
 void setup()
 {
-  Serial.begin( 115200 ); /* prepare for possible serial debug */
+  Serial.begin(115200); /* prepare for possible serial debug */
   Serial.setTimeout(0);
   String LVGL_Arduino = "Hello Arduino! ";
   LVGL_Arduino += String('V') + lv_version_major() + "." + lv_version_minor() + "." + lv_version_patch();

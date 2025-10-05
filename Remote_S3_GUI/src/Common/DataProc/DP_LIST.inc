@@ -16,5 +16,5 @@ DP_DEF(SysConfig, 0);
 DP_DEF(TrackFilter, 0);
 DP_DEF(Pair, sizeof(HAL::device_info_t));
 DP_DEF(Calibrate, sizeof(HAL::Joystick_Calibrate_t)*2);
+DP_DEF(CarPower, sizeof(uint8_t));
 DP_DEF(Remote, 0);
-
