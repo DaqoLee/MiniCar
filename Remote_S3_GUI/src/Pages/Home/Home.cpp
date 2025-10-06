@@ -114,6 +114,11 @@ void Home::Update()
     lv_bar_set_value(View.ui.topInfo.barInfoGrp[0].bar[1], lv_map(joydata[1],0,4095,-100,100), LV_ANIM_OFF);
     lv_bar_set_value(View.ui.topInfo.barInfoGrp[1].bar[0], lv_map(joydata[2],0,4095,-100,100), LV_ANIM_OFF);
     lv_bar_set_value(View.ui.topInfo.barInfoGrp[1].bar[1], lv_map(joydata[3],0,4095,-100,100), LV_ANIM_OFF);
+
+    lv_obj_set_pos(View.ui.bottomInfo.btnLeft,-70 + lv_map(lv_bar_get_value(View.ui.topInfo.barInfoGrp[0].bar[1]),-100,100,-30,30),  lv_map(lv_bar_get_value(View.ui.topInfo.barInfoGrp[0].bar[0]),-100,100,30,-30));
+    lv_obj_set_pos(View.ui.bottomInfo.btnRight,70 + lv_map(lv_bar_get_value(View.ui.topInfo.barInfoGrp[1].bar[1]),-100,100,-30,30),  lv_map(lv_bar_get_value(View.ui.topInfo.barInfoGrp[1].bar[0]),-100,100,30,-30));
+
+
 }
 
 void Home::onTimerUpdate(lv_timer_t* timer)
