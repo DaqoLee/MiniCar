@@ -147,10 +147,15 @@ static lv_obj_t* StatusBar_RecAnimLabelCreate(lv_obj_t* par)
 static void StatusBar_Update(lv_timer_t* timer)
 {
     /* satellite */
-    uint8_t carPower;
+    static uint8_t carPower = 100;
     if(actStatusBar->Pull("CarPower", &carPower, sizeof(carPower)) == Account::RES_OK)
     {
-        lv_label_set_text_fmt(ui.carBattery.label, "%d",carPower);
+        if (carPower >= 0 && carPower <=100)
+        {
+            lv_label_set_text_fmt(ui.carBattery.label, "%d",carPower);
+        }
+        
+        
     }
 
     DataProc::Storage_Basic_Info_t sdInfo;
@@ -160,10 +165,20 @@ static void StatusBar_Update(lv_timer_t* timer)
     }
 
     /* clock */
-    HAL::Clock_Info_t clock;
-    if(actStatusBar->Pull("Clock", &clock, sizeof(clock)) == Account::RES_OK)
+    int16_t connect;
+    if(actStatusBar->Pull("Connect", &connect, sizeof(connect)) == Account::RES_OK)
     {
-        lv_label_set_text_fmt(ui.labelClock, "%02d:%02d", clock.hour, clock.minute);
+        //lv_label_set_text_fmt(ui.labelClock, "%02d:%02d", clock.hour, clock.minute);
+        if (connect > 0)
+        {
+            lv_obj_set_style_text_color(ui.labelClock, lv_color_hex(0x26B08C), LV_PART_MAIN|LV_STATE_DEFAULT);
+            lv_label_set_text(ui.labelClock,"Connected");
+        }
+        else
+        {      
+            lv_obj_set_style_text_color(ui.labelClock, lv_color_hex(0xff931e), LV_PART_MAIN|LV_STATE_DEFAULT);
+            lv_label_set_text(ui.labelClock,"Connecting");
+        }
     }
 
     /* battery */
@@ -424,6 +439,7 @@ DATA_PROC_INIT_DEF(StatusBar)
     account->Subscribe("Power");
     account->Subscribe("Clock");
     account->Subscribe("CarPower");
+    account->Subscribe("Connect");
     account->SetEventCallback(onEvent);
 
     actStatusBar = account;

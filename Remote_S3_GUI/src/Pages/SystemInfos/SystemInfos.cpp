@@ -136,7 +136,7 @@ void SystemInfos::Update()
     /* IMU */
     int steps;
     Model.GetIMUInfo(&steps, buf, sizeof(buf));
-    View.SetIMU(steps, buf);
+    // View.SetIMU(steps, buf);
 
     /* Power */
     int usage;

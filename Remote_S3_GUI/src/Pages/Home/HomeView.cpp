@@ -136,14 +136,14 @@ void HomeView::BarInfoGrp_Create(lv_obj_t* par, BarInfo_t* info)
  
     //Write style for main_bar_2, Part: LV_PART_MAIN, State: LV_STATE_DEFAULT.
     lv_obj_set_style_bg_opa(bar, 60, LV_PART_MAIN|LV_STATE_DEFAULT);
-    lv_obj_set_style_bg_color(bar, lv_color_white(), LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_bg_color(bar, lv_color_hex(0x26B08C), LV_PART_MAIN|LV_STATE_DEFAULT);
     lv_obj_set_style_bg_grad_dir(bar, LV_GRAD_DIR_NONE, LV_PART_MAIN|LV_STATE_DEFAULT);
     lv_obj_set_style_radius(bar, 10, LV_PART_MAIN|LV_STATE_DEFAULT);
     lv_obj_set_style_shadow_width(bar, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
 
     //Write style for main_bar_2, Part: LV_PART_INDICATOR, State: LV_STATE_DEFAULT.
     lv_obj_set_style_bg_opa(bar, 255, LV_PART_INDICATOR|LV_STATE_DEFAULT);
-    lv_obj_set_style_bg_color(bar, lv_color_white(), LV_PART_INDICATOR|LV_STATE_DEFAULT);
+    lv_obj_set_style_bg_color(bar, lv_color_hex(0x26B08C), LV_PART_INDICATOR|LV_STATE_DEFAULT);
     lv_obj_set_style_bg_grad_dir(bar, LV_GRAD_DIR_NONE, LV_PART_INDICATOR|LV_STATE_DEFAULT);
     lv_obj_set_style_radius(bar, 10, LV_PART_INDICATOR|LV_STATE_DEFAULT);
 
@@ -160,14 +160,14 @@ void HomeView::BarInfoGrp_Create(lv_obj_t* par, BarInfo_t* info)
  
     //Write style for main_bar_2, Part: LV_PART_MAIN, State: LV_STATE_DEFAULT.
     lv_obj_set_style_bg_opa(bar, 60, LV_PART_MAIN|LV_STATE_DEFAULT);
-    lv_obj_set_style_bg_color(bar, lv_color_white(), LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_bg_color(bar, lv_color_hex(0x26B08C), LV_PART_MAIN|LV_STATE_DEFAULT);
     lv_obj_set_style_bg_grad_dir(bar, LV_GRAD_DIR_NONE, LV_PART_MAIN|LV_STATE_DEFAULT);
     lv_obj_set_style_radius(bar, 10, LV_PART_MAIN|LV_STATE_DEFAULT);
     lv_obj_set_style_shadow_width(bar, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
 
     //Write style for main_bar_2, Part: LV_PART_INDICATOR, State: LV_STATE_DEFAULT.
     lv_obj_set_style_bg_opa(bar, 255, LV_PART_INDICATOR|LV_STATE_DEFAULT);
-    lv_obj_set_style_bg_color(bar, lv_color_white(), LV_PART_INDICATOR|LV_STATE_DEFAULT);
+    lv_obj_set_style_bg_color(bar, lv_color_hex(0x26B08C), LV_PART_INDICATOR|LV_STATE_DEFAULT);
     lv_obj_set_style_bg_grad_dir(bar, LV_GRAD_DIR_NONE, LV_PART_INDICATOR|LV_STATE_DEFAULT);
     lv_obj_set_style_radius(bar, 10, LV_PART_INDICATOR|LV_STATE_DEFAULT);
 

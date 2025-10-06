@@ -23,83 +23,83 @@ void DeviceView::Create(lv_obj_t* root)
     Item_Create(
         &ui.home,
         root,
-        "Home",
-        "home",
+        "01",
+        "device",
 
-        "Total trip\n"
-        "Total time\n"
-        "Max speed"
+        " \n"
+        " \n"
+        " "
     );
 
     /* Item GPS */
     Item_Create(
         &ui.calibrate,
         root,
-        "Calibrate",
-        "calibrate",
+        "02",
+        "device",
 
-        "Latitude\n"
-        "Longitude\n"
-        "Altitude\n"
-        "UTC Time\n\n"
-        "Course\n"
-        "Speed"
+        " \n"
+        " \n"
+        " \n"
+        " \n"
+        " \n"
+        " "
     );
 
     /* Item MAG */
     Item_Create(
         &ui.pair,
         root,
-        "Pair",
-        "pair",
+        "03",
+        "device",
 
-        "Compass\n"
-        "X\n"
-        "Y\n"
-        "Z"
+        " \n"
+        " \n"
+        " \n"
+        " "
     );
 
     /* Item IMU */
     Item_Create(
         &ui.device,
         root,
-        "Device",
+        "04",
         "device",
 
-        "Step\n"
-        "Ax\n"
-        "Ay\n"
-        "Az\n"
-        "Gx\n"
-        "Gy\n"
-        "Gz"
+        " \n"
+        " \n"
+        " \n"
+        " \n"
+        " \n"
+        " \n"
+        " "
     );
 
     /* Item Battery */
     Item_Create(
         &ui.battery,
         root,
-        "Battery",
-        "battery_info",
+        "05",
+        "device",
 
-        "Usage\n"
-        "Voltage\n"
-        "Status"
+        " \n"
+        " \n"
+        " "
     );
 
     /* Item System */
     Item_Create(
         &ui.system,
         root,
-        "System",
-        "system_info",
+        "06",
+        "device",
 
-        "Firmware\n"
-        "Author\n"
-        "LVGL\n"
-        "SysTick\n"
-        "Compiler\n\n"
-        "Build\n"
+        " \n"
+        " \n"
+        " \n"
+        " \n"
+        " \n\n"
+        " \n"
     );
 
     Group_Init();
@@ -258,7 +258,7 @@ void DeviceView::Item_Create(
     /* datas */
     label = lv_label_create(cont);
     lv_obj_enable_style_refresh(false);
-    lv_label_set_text(label, "-");
+    lv_label_set_text(label, " ");
     lv_obj_add_style(label, &style.data, 0);
     lv_obj_align(label, LV_ALIGN_CENTER, 60, 0);
     item->labelData = label;

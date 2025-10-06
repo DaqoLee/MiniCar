@@ -101,9 +101,9 @@ void CalibrateView::BottomInfo_Create(lv_obj_t* par)
     lv_obj_remove_style_all(cont);
 
     
-    // lv_obj_set_style_bg_color(cont, lv_color_black(), 0);
-    lv_obj_set_style_bg_color(cont, lv_color_hex(0x111111), 0);//lv_color_hex(0x111111)
-    lv_obj_set_size(cont, LV_HOR_RES, 50);
+    lv_obj_set_style_bg_color(cont, lv_color_black(), 0);
+    // lv_obj_set_style_bg_color(cont, lv_color_hex(0x111111), 0);//lv_color_hex(0x111111)
+    lv_obj_set_size(cont, LV_HOR_RES, 80);
     lv_obj_align(cont, LV_ALIGN_BOTTOM_MID, 0, 0);
     
     // lv_obj_set_style_border_color(cont,  lv_color_hex(0xff931e), 0);//lv_color_hex(0xff931e)
@@ -124,21 +124,22 @@ void CalibrateView::BottomInfo_Create(lv_obj_t* par)
 
     ui.bottomInfo.cont = cont;
 
-    ui.bottomInfo.btnLeft = JoyBtn_Create(cont, -70);
-    ui.bottomInfo.btnRight = JoyBtn_Create(cont, 70);
+    ui.bottomInfo.btnLeft = JoyBtn_Create(cont, -80, "next");
+    ui.bottomInfo.btnCenter = JoyBtn_Create(cont, 0,"save");
+    ui.bottomInfo.btnRight = JoyBtn_Create(cont, 80, "exit");
 
 }
 
 
-lv_obj_t* CalibrateView::JoyBtn_Create(lv_obj_t* par, lv_coord_t x_ofs)
+lv_obj_t* CalibrateView::JoyBtn_Create(lv_obj_t* par, lv_coord_t x_ofs, const char *text)
 {
     lv_obj_t* obj = lv_obj_create(par);
     // lv_obj_set_pos(obj, 45, 45);
-    lv_obj_set_size(obj, 30, 30);
-    // obj_label = lv_label_create(obj);
-    // lv_label_set_text(obj_label, "");
-    // lv_label_set_long_mode(obj_label, LV_LABEL_LONG_WRAP);
-    // lv_obj_align(obj_label, LV_ALIGN_CENTER, 0, 0);
+    lv_obj_set_size(obj, 60, 40);
+    lv_obj_t* obj_label = lv_label_create(obj);
+    lv_label_set_text(obj_label, text);
+    lv_label_set_long_mode(obj_label, LV_LABEL_LONG_WRAP);
+    lv_obj_align(obj_label, LV_ALIGN_CENTER, 0, 0);
     lv_obj_set_style_pad_all(obj, 0, LV_STATE_DEFAULT);
     // lv_obj_set_width(obj_label, LV_PCT(100));
     lv_obj_align(obj, LV_ALIGN_CENTER, x_ofs, 0);
@@ -150,7 +151,7 @@ lv_obj_t* CalibrateView::JoyBtn_Create(lv_obj_t* par, lv_coord_t x_ofs)
 
     lv_obj_set_style_bg_grad_dir(obj, LV_GRAD_DIR_NONE, LV_PART_MAIN|LV_STATE_DEFAULT);
     lv_obj_set_style_border_width(obj, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
-    lv_obj_set_style_radius(obj, 15, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_radius(obj, 10, LV_PART_MAIN|LV_STATE_DEFAULT);
     lv_obj_set_style_shadow_width(obj, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
 
     return obj;

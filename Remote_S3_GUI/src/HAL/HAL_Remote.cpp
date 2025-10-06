@@ -80,9 +80,10 @@ static CommitFunc_t pairInfoCommitFunc = nullptr; // 配对信息更新回调
 static void* pairUserData = nullptr;              // 配对回调用户数据
 static CommitFunc_t CalibrateInfoCommitFunc = nullptr; // 校准信息更新回调
 static void* CalibrateUserData = nullptr;              // 校准回调用户数据
-
 static CommitFunc_t CarPowerInfoCommitFunc = nullptr; // 小车电量信息更新回调
 static void* CarPowerUserData = nullptr;              // 小车电量回调用户数据
+static CommitFunc_t ConnectInfoCommitFunc = nullptr; // 连接信息更新回调
+static void* ConnectUserData = nullptr;              // 连接回调用户数据
 // NVS存储对象（不变）
 static Preferences nvsStorage;
 
@@ -207,8 +208,14 @@ void HAL::Remote_Update()
         // 更新发送成功计数（限制范围：-50 ~ 200）
         if (result == ESP_OK) {
             sendSuccessCount = (sendSuccessCount >= 200) ? 200 : sendSuccessCount + 1;
+
         } else {
             sendSuccessCount = (sendSuccessCount <= -50) ? -50 : sendSuccessCount - 10;
+        }
+
+        if ( ConnectInfoCommitFunc != nullptr) {
+            ConnectInfoCommitFunc(&sendSuccessCount, ConnectUserData);
+                //   Serial.println("[Calibrate]CalibrateInfoCommitFunc");
         }
     }
 }
@@ -234,16 +241,7 @@ void HAL::Joystick_Init()
     Serial.println("[Joystick] 左/右摇杆初始化完成");
 }
 
-/**
- * @brief 设置摇杆数据更新回调（用于外部处理左/右摇杆数据）
- * @param func 回调函数指针
- * @param userData 回调用户数据（透传）
- */
-void HAL::Joystick_SetCommitCallback(CommitFunc_t func, void* userData)
-{
-    joyDataCommitFunc = func;
-    joyUserData = userData;
-}
+
 
 /**
  * @brief 更新左/右摇杆数据（采集+校准+回调通知）
@@ -315,6 +313,17 @@ long HAL::JoyMap(long x, long in_min, long in_mid, long in_max, long out_min, lo
 // ------------------------------------------------------------------------------
 // 4.3 配对与NVS存储模块（不变，仅适配变量名）
 // ------------------------------------------------------------------------------
+
+/**
+ * @brief 设置摇杆数据更新回调（用于外部处理左/右摇杆数据）
+ * @param func 回调函数指针
+ * @param userData 回调用户数据（透传）
+ */
+void HAL::Joystick_SetCommitCallback(CommitFunc_t func, void* userData)
+{
+    joyDataCommitFunc = func;
+    joyUserData = userData;
+}
 /**
  * @brief 设置配对信息更新回调（用于外部显示配对状态）
  * @param func 回调函数指针
@@ -340,6 +349,12 @@ void HAL::CarPower_SetCommitCallback(CommitFunc_t func, void* userData)
 
 }
 
+void HAL::Connect_SetCommitCallback(CommitFunc_t func, void* userData)
+{
+    ConnectInfoCommitFunc = func;
+    ConnectUserData = userData;
+
+}
 
 /**
  * @brief 保存配对设备信息到NVS

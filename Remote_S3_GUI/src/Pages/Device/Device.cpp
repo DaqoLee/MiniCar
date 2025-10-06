@@ -108,53 +108,53 @@ void Device::AttachEvent(lv_obj_t* obj)
 
 void Device::Update()
 {
-    char buf[64];
+    // char buf[64];
 
     /* Sport */
-    float trip;
-    float maxSpd;
-    Model.GetSportInfo(&trip, buf, sizeof(buf), &maxSpd);
-    // View.SetSport(trip, buf, maxSpd);
+    // float trip;
+    // float maxSpd;
+    // Model.GetSportInfo(&trip, buf, sizeof(buf), &maxSpd);
+    // // View.SetSport(trip, buf, maxSpd);
 
-    /* GPS */
-    float lat;
-    float lng;
-    float alt;
-    float course;
-    float speed;
-    Model.GetGPSInfo(&lat, &lng, &alt, buf, sizeof(buf), &course, &speed);
-    // View.SetGPS(lat, lng, alt, buf, course, speed);
+    // /* GPS */
+    // float lat;
+    // float lng;
+    // float alt;
+    // float course;
+    // float speed;
+    // Model.GetGPSInfo(&lat, &lng, &alt, buf, sizeof(buf), &course, &speed);
+    // // View.SetGPS(lat, lng, alt, buf, course, speed);
 
-    /* MAG */
-    float dir;
-    int x;
-    int y;
-    int z;
-    Model.GetMAGInfo(&dir, &x, &y, &z);
-    // View.SetMAG(dir, x, y, z);
+    // /* MAG */
+    // float dir;
+    // int x;
+    // int y;
+    // int z;
+    // Model.GetMAGInfo(&dir, &x, &y, &z);
+    // // View.SetMAG(dir, x, y, z);
 
-    /* IMU */
-    int steps;
-    Model.GetIMUInfo(&steps, buf, sizeof(buf));
-    View.SetIMU(steps, buf);
+    // /* IMU */
+    // int steps;
+    // Model.GetIMUInfo(&steps, buf, sizeof(buf));
+    // View.SetIMU(steps, buf);
 
-    /* Power */
-    int usage;
-    float voltage;
-    Model.GetBatteryInfo(&usage, &voltage, buf, sizeof(buf));
-    View.SetBattery(usage, voltage, buf);
+    // /* Power */
+    // int usage;
+    // float voltage;
+    // Model.GetBatteryInfo(&usage, &voltage, buf, sizeof(buf));
+    // View.SetBattery(usage, voltage, buf);
 
 
-    /* System */
-    // DataProc::MakeTimeString(lv_tick_get(), buf, sizeof(buf));
-    View.SetSystem(
-        VERSION_FIRMWARE_NAME " " VERSION_SOFTWARE,
-        VERSION_AUTHOR_NAME,
-        VERSION_LVGL,
-        buf,
-        VERSION_COMPILER,
-        VERSION_BUILD_TIME
-    );
+    // /* System */
+    // // DataProc::MakeTimeString(lv_tick_get(), buf, sizeof(buf));
+    // View.SetSystem(
+    //     VERSION_FIRMWARE_NAME " " VERSION_SOFTWARE,
+    //     VERSION_AUTHOR_NAME,
+    //     VERSION_LVGL,
+    //     buf,
+    //     VERSION_COMPILER,
+    //     VERSION_BUILD_TIME
+    // );
 }
 
 void Device::onTimerUpdate(lv_timer_t* timer)
@@ -166,25 +166,25 @@ void Device::onTimerUpdate(lv_timer_t* timer)
 
 void Device::onBtnClicked(lv_obj_t* btn)
 {
-    if (btn == View.ui.pair.icon)
-    {
-        //_Manager->Push("Pages/Pair");
-    }
-    else if (btn == View.ui.home.icon)
-    {
-        // _Manager->Push("Pages/Home");
-        _Manager->Pop();
-    }
-    else if (btn == View.ui.calibrate.icon)
-    {
-       // _Manager->Push("Pages/Calibrate");
-    }
-    else if (btn == View.ui.device.icon)
-    {
-       // _Manager->Push("Pages/Device");
-    }    
+    // if (btn == View.ui.pair.icon)
+    // {
+    //     //_Manager->Push("Pages/Pair");
+    // }
+    // else if (btn == View.ui.home.icon)
+    // {
+    //     // _Manager->Push("Pages/Home");
+    //     _Manager->Pop();
+    // }
+    // else if (btn == View.ui.calibrate.icon)
+    // {
+    //    // _Manager->Push("Pages/Calibrate");
+    // }
+    // else if (btn == View.ui.device.icon)
+    // {
+    //    // _Manager->Push("Pages/Device");
+    // }    
 
-    
+     _Manager->Pop();
 }
 void Device::onEvent(lv_event_t* event)
 {

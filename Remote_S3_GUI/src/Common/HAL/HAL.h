@@ -133,6 +133,7 @@ void savePairedDevices();
 void Pair_SetCommitCallback(CommitFunc_t func, void* userData);
 void Calibrate_SetCommitCallback(CommitFunc_t func, void* userData);
 void CarPower_SetCommitCallback(CommitFunc_t func, void* userData);
+void Connect_SetCommitCallback(CommitFunc_t func, void* userData);
 void loadJoyCalibrateData();
 void saveJoyCalibrateData();
 void calibrateLeftRightJoystick();

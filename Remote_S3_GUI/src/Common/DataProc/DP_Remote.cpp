@@ -60,3 +60,11 @@ DATA_PROC_INIT_DEF(CarPower)
     }, account);
 }
 
+DATA_PROC_INIT_DEF(Connect)
+{
+    HAL::Connect_SetCommitCallback([](void* info, void* userData){
+        Account* account = (Account*)userData;
+        return account->Commit(info, sizeof(int16_t));
+    }, account);
+}
+

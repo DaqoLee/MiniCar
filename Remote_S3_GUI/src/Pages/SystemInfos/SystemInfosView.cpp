@@ -26,9 +26,9 @@ void SystemInfosView::Create(lv_obj_t* root)
         "Home",
         "home",
 
-        "Total trip\n"
-        "Total time\n"
-        "Max speed"
+        " \n"
+        " \n"
+        " "
     );
 
     /* Item GPS */
@@ -38,12 +38,12 @@ void SystemInfosView::Create(lv_obj_t* root)
         "Calibrate",
         "calibrate",
 
-        "Latitude\n"
-        "Longitude\n"
-        "Altitude\n"
-        "UTC Time\n\n"
-        "Course\n"
-        "Speed"
+        " \n"
+        " \n"
+        " \n"
+        " \n"
+        " \n"
+        " "
     );
 
     /* Item MAG */
@@ -53,10 +53,10 @@ void SystemInfosView::Create(lv_obj_t* root)
         "Pair",
         "pair",
 
-        "Compass\n"
-        "X\n"
-        "Y\n"
-        "Z"
+        " \n"
+        " \n"
+        " \n"
+        " "
     );
 
     /* Item IMU */
@@ -66,13 +66,13 @@ void SystemInfosView::Create(lv_obj_t* root)
         "Device",
         "device",
 
-        "Step\n"
-        "Ax\n"
-        "Ay\n"
-        "Az\n"
-        "Gx\n"
-        "Gy\n"
-        "Gz"
+        " \n"
+        " \n"
+        " \n"
+        " \n"
+        " \n"
+        " \n"
+        " "
     );
 
     /* Item Battery */
@@ -82,9 +82,9 @@ void SystemInfosView::Create(lv_obj_t* root)
         "Battery",
         "battery_info",
 
-        "Usage\n"
-        "Voltage\n"
-        "Status"
+        " \n"
+        " \n"
+        " "
     );
 
     /* Item System */
@@ -258,7 +258,7 @@ void SystemInfosView::Item_Create(
     /* datas */
     label = lv_label_create(cont);
     lv_obj_enable_style_refresh(false);
-    lv_label_set_text(label, "-");
+    lv_label_set_text(label, " ");
     lv_obj_add_style(label, &style.data, 0);
     lv_obj_align(label, LV_ALIGN_CENTER, 60, 0);
     item->labelData = label;

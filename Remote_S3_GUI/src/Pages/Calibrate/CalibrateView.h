@@ -46,6 +46,7 @@ public:
         {
             lv_obj_t* cont;
             lv_obj_t* btnLeft;
+            lv_obj_t* btnCenter;
             lv_obj_t* btnRight;
             // SubInfo_t labelInfoGrp[4];
         } bottomInfo;
@@ -71,7 +72,7 @@ private:
     void BarInfoGrp_Create(lv_obj_t* par, BarInfo_t* info);
     void BtnCont_Create(lv_obj_t* par);
     lv_obj_t* Btn_Create(lv_obj_t* par, const void* img_src, lv_coord_t x_ofs);
-    lv_obj_t* JoyBtn_Create(lv_obj_t* par, lv_coord_t x_ofs);
+    lv_obj_t* JoyBtn_Create(lv_obj_t* par, lv_coord_t x_ofs,  const  char* text);
     void SubInfoGrp_Create(lv_obj_t* par, SubInfo_t* info, const char* unitText);
 };
 

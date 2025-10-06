@@ -50,6 +50,7 @@ do{\
         IMPORT_IMG(time_info);
         IMPORT_IMG(trip);
         IMPORT_IMG(home);
+        IMPORT_IMG(logo);
         IMPORT_IMG(device);
         IMPORT_IMG(pair);
         IMPORT_IMG(calibrate);

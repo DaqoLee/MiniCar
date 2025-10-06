@@ -24,6 +24,7 @@ void Calibrate::onViewLoad()
     AttachEvent(_root);
     AttachEvent(View.ui.bottomInfo.cont);
     AttachEvent(View.ui.bottomInfo.btnLeft);
+    AttachEvent(View.ui.bottomInfo.btnCenter);
     AttachEvent(View.ui.bottomInfo.btnRight);
 }
 
@@ -40,10 +41,11 @@ void Calibrate::onViewWillAppear()
 
     lv_group_set_wrap(group, true);
 
-    lv_group_add_obj(group, View.ui.bottomInfo.cont);
+    // lv_group_add_obj(group, View.ui.bottomInfo.cont);
     lv_group_add_obj(group, View.ui.bottomInfo.btnLeft);
+    lv_group_add_obj(group, View.ui.bottomInfo.btnCenter);
     lv_group_add_obj(group, View.ui.bottomInfo.btnRight);
-    lv_group_focus_obj(View.ui.bottomInfo.cont);
+    lv_group_focus_obj(View.ui.bottomInfo.btnRight);
 
     // if (lastFocus)
     // {
@@ -127,7 +129,7 @@ void Calibrate::onBtnClicked(lv_obj_t* btn)
     // {
     //     _Manager->Push("Pages/LiveMap");
     // }
-    if (btn == View.ui.bottomInfo.cont)
+    if (btn == View.ui.bottomInfo.btnRight)
     {
         _Manager->Pop();
     }
@@ -136,7 +138,7 @@ void Calibrate::onBtnClicked(lv_obj_t* btn)
         LV_LOG_INFO("btnLeft");
         Model.SetRemoteMode(DataProc::OperationMode_t::MODE_CALIBRATE,DataProc::CalibrateMode_t::READ_MAX_MIN);
     }
-    else if (btn == View.ui.bottomInfo.btnRight)
+    else if (btn == View.ui.bottomInfo.btnCenter)
     {
         LV_LOG_INFO("btnRight");
         Model.SetRemoteMode(DataProc::OperationMode_t::MODE_CALIBRATE,DataProc::CalibrateMode_t::SAVE);
