@@ -6,6 +6,7 @@
 WebServer mobileServer(80);    // 手机遥控模式服务器
 WebSocketsServer webSocket(81); // WebSocket服务器
 
+
 // 手机遥控模式网页
 void handleMobileRoot() {
   String html = R"rawliteral(
@@ -14,7 +15,7 @@ void handleMobileRoot() {
   <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ESP32C3 Smart Car Control</title>
+    <title>Pocket Car Control</title>
     <style>
       * {
         margin: 0;
@@ -152,44 +153,6 @@ void handleMobileRoot() {
         background: rgba(255, 255, 255, 0.3);
         border-radius: 50%;
       }
-      .steering-wheel {
-        width: 120px;
-        height: 120px;
-        border: 4px solid #3498db;
-        border-radius: 50%;
-        margin: 0 auto 20px;
-        position: relative;
-        transform: rotate(0deg);
-        transition: transform 0.2s ease;
-      }
-      .steering-wheel::before {
-        content: "";
-        position: absolute;
-        top: 50%;
-        left: 0;
-        right: 0;
-        height: 4px;
-        background: #3498db;
-      }
-      .steering-wheel::after {
-        content: "";
-        position: absolute;
-        top: 0;
-        left: 50%;
-        bottom: 0;
-        width: 4px;
-        background: #3498db;
-      }
-      .steering-center {
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        width: 20px;
-        height: 20px;
-        background: #e74c3c;
-        border-radius: 50%;
-        transform: translate(-50%, -50%);
-      }
       .connection-status {
         display: inline-block;
         padding: 8px 15px;
@@ -208,20 +171,6 @@ void handleMobileRoot() {
         border-radius: 15px;
         font-size: 14px;
         margin-top: 20px;
-      }
-      .instructions h3 {
-        margin-bottom: 10px;
-        display: flex;
-        align-items: center;
-      }
-      .instructions p {
-        margin-bottom: 8px;
-        display: flex;
-        align-items: center;
-      }
-      .instructions i {
-        margin-right: 10px;
-        font-size: 18px;
       }
       .footer {
         margin-top: 20px;
@@ -249,15 +198,12 @@ void handleMobileRoot() {
   </head>
   <body>
     <div class="container">
-      <h1>ESP32C3 SMART CAR</h1>
-      <div class="subtitle">Joystick Control with Battery Monitoring</div>
-      
+      <h1>POCKET CAR</h1>
       <div class="connection-status" id="connectionStatus">Disconnected</div>
       
       <!-- 电池电量显示 -->
       <div class="battery-container">
         <div class="battery-header">
-          <div class="battery-info">Battery Status</div>
           <div class="battery-info" id="batteryVoltage">0.0V</div>
         </div>
         <div class="battery-level">
@@ -289,18 +235,7 @@ void handleMobileRoot() {
         <div class="joystick" id="joystick"></div>
       </div>
       
-      <div class="instructions">
-        <h3>📋 Instructions:</h3>
-        <p>📶 1. Connect to WiFi: <strong>ESP32C3-Car</strong> (Password: 12345678)</p>
-        <p>🕹️ 2. Drag the joystick to control the car</p>
-        <p>🔋 3. Battery status is updated every 2 seconds</p>
-        <p>⚠️ 4. Release joystick to stop the car</p>
-        <p>🔌 5. Connection Status: <span id="wsStatus">Disconnected</span></p>
-      </div>
-      
-      <div class="footer">
-        ESP32C3 Joystick Control | Battery Monitoring | Made with ❤️
-      </div>
+
     </div>
     
     <script>

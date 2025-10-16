@@ -4,7 +4,7 @@
 
 
 #define BL 38
-#define PWOR_PIN 44
+#define POWER_PIN 44
 
 #define KEY_R1_PIN 45
 #define KEY_R2_PIN 46

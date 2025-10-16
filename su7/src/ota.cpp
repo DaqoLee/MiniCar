@@ -97,15 +97,11 @@ void handleOtaRoot() {
       .success { color: #2ecc71; }
       .error { color: #e74c3c; }
       .warning { color: #f39c12; }
-      .remote-btn {
-        background: #9b59b6; margin-top: 20px;
-      }
-      .remote-btn:hover { background: #8e44ad; }
     </style>
   </head>
   <body>
     <div class="container">
-      <h1>ESP32C3 FIRMWARE UPDATE</h1>
+      <h1>POCKET CAR FIRMWARE UPDATE</h1>
       <p>Upload a new firmware (.bin file) to your device</p>
       
       <div class="upload-container">
@@ -120,11 +116,6 @@ void handleOtaRoot() {
         
         <div class="status" id="status"></div>
       </div>
-      
-      <button class="upload-btn remote-btn" 
-              onclick="location.href='http://192.168.4.1'">
-        Switch to Remote Control
-      </button>
     </div>
     
     <script>
@@ -213,5 +204,3 @@ void handleOtaRoot() {
   
   otaServer.send(200, "text/html", html);
 }
-
-

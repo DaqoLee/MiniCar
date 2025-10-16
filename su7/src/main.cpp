@@ -30,8 +30,9 @@ const char* password = "12345678";        // 通用密码
 
 // 模式定义
 enum OperationMode {
-  MODE_MOBILE,    // 手机遥控模式
+ 
   MODE_JOYSTICK,  // 摇杆控制模式
+  MODE_MOBILE,    // 手机遥控模式
   MODE_OTA,        // OTA更新模式
   MODE_PAIR
 };
@@ -61,8 +62,8 @@ volatile OperationMode currentMode = MODE_JOYSTICK;
 
 
 // 舵机参数
-const int servoMin = 1050;
-const int servoMax = 1650;
+const int servoMin = 950;
+const int servoMax = 1750;
 const int servoCenter = 1350;
 int currentSteering = servoCenter;
 Servo myservo;

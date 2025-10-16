@@ -2,9 +2,7 @@
 
 void HAL::HAL_Init()
 {
-    Buzz_init();
-    Audio_Init();
-    GPS_Init();
+
     Power_Init();
     Joystick_Init();
     Remote_Init();

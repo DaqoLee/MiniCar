@@ -1029,11 +1029,36 @@ lv_anim_timeline_t* anim_timeline;
 lv_obj_t* ucont;
 lv_obj_t* labelLogo;
 
+void PowerON()
+{
+   pinMode(POWER_PIN,OUTPUT);
+   digitalWrite(POWER_PIN, HIGH);
+}
+
+void PowerOFF()
+{
+  digitalWrite(POWER_PIN, LOW);
+  digitalWrite(BL, LOW);
+}
+
 // 电源管理任务
 void PowerTask(void *pvParameters) {
   static uint16_t count = 0;
   while (1) {
     HAL::HAL_Update();
+    if (digitalRead(KEY_R2_PIN)==0)
+    {
+       count++;
+       if (count>=100)
+       {
+         PowerOFF();
+       }   
+    }
+    else
+    {
+      count = 0;
+    }
+    
     delay(5);
   }
 }
@@ -1045,20 +1070,15 @@ void JoystickTask(void *pvParameters) {
     delay(5);
   }
 }
+
+
 void setup()
 {
+  PowerON();
+
   Serial.begin(115200); /* prepare for possible serial debug */
   Serial.setTimeout(0);
-  String LVGL_Arduino = "Hello Arduino! ";
-  LVGL_Arduino += String('V') + lv_version_major() + "." + lv_version_minor() + "." + lv_version_patch();
-
-  Serial.println( LVGL_Arduino );
-  Serial.println( "I am LVGL_Arduino" );
-
-  Serial.begin(115200);
-
   lv_init();
-   
   tft.begin();
   tft.setRotation(2);
   tft.fillScreen(TFT_BLACK);
@@ -1196,6 +1216,9 @@ void lv_port_indev_init(void)
      * and assign this input device to group to navigate in it:
      * `lv_indev_set_group(indev_encoder, group);` */
 }
+
+
+
 
 
 #endif
