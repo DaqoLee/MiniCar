@@ -55,10 +55,23 @@ typedef struct
 /* IMU */
 typedef struct
 {
-    int16_t  left_x;
-    int16_t  left_y;
-    int16_t  right_x; 
-    int16_t  right_y; 
+    union
+    {
+        uint8_t data[9];
+        struct
+        {
+            int16_t  left_x;
+            int16_t  left_y;
+            int16_t  right_x; 
+            int16_t  right_y; 
+            uint8_t key_l:1;
+            uint8_t key_r:1;
+            uint8_t key_jl:1;
+            uint8_t key_jr:1;
+            uint8_t count:4;
+        };
+    };
+
 } Joystick_Info_t;
 
 typedef struct {

@@ -1066,7 +1066,11 @@ void JoystickTask(void *pvParameters) {
   static uint16_t count = 0;
   while (1) {
     HAL::Joystick_Update();
-    HAL::Remote_Update();
+    if (++count == 10)
+    {
+      count = 0;
+      HAL::Remote_Update();
+    }
     delay(5);
   }
 }

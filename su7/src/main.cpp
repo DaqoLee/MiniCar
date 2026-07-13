@@ -14,11 +14,11 @@
 // 引脚定义
 #define MOTOR_A_PWM 6
 #define MOTOR_B_PWM 7
-#define STEERING_PIN 3
-#define CAR_SLEEP_PIN 5
+#define STEERING_PIN 10
+// #define CAR_SLEEP_PIN 5
 #define POWER_KEY_PIN 1
 #define BATTERY_PIN 0
-#define POWER_PIN 10
+#define POWER_PIN 5
 #define RGB_PIN 4
 #define MODE_SWITCH_PIN 1
 
@@ -496,7 +496,28 @@ void setup() {
   digitalWrite(POWER_PIN, HIGH);
 
   pinMode(POWER_KEY_PIN, INPUT_PULLUP);
+   /* 舵机初始化 */
+  myservo.setPeriodHertz(50);
+  myservo.attach(STEERING_PIN, 2, 1000, 2000);
+  myservo.writeMicroseconds(servoCenter); 
+  
+   /* 电机PWM初始化 */
+  ledcSetup(0, 5000, 8);
+  ledcAttachPin(MOTOR_A_PWM, 0);
+  ledcSetup(1, 5000, 8);
+  ledcAttachPin(MOTOR_B_PWM, 1);
+  setMotorSpeed(0);
+  // pinMode(CAR_SLEEP_PIN, OUTPUT);
+  // digitalWrite(CAR_SLEEP_PIN, HIGH);
 
+  /* 按键设置 */
+  button.setPressMs(1500);
+  button.attachDoubleClick(doubleClick);
+  button.attachLongPressStart(longPress);
+
+  /* 电池电压ADC设置 */
+  analogReadResolution(12);
+  updateBatteryInfo();
   Serial.begin(115200);
 
 
@@ -509,34 +530,10 @@ void setup() {
   leds[0] = CHSV(HUE_GREEN, 255, 30);
   FastLED.show();
 
-  isPair();
-
   /*如果按键一直按下超过7s，进入配对模式*/
-  
   /* 否则正常初始化 */ 
   
-   /* 舵机初始化 */
-  myservo.setPeriodHertz(50);
-  myservo.attach(STEERING_PIN, 2, 1000, 2000);
-  myservo.writeMicroseconds(servoCenter); 
-  
-   /* 电机PWM初始化 */
-  ledcSetup(0, 5000, 8);
-  ledcAttachPin(MOTOR_A_PWM, 0);
-  ledcSetup(1, 5000, 8);
-  ledcAttachPin(MOTOR_B_PWM, 1);
-
-  pinMode(CAR_SLEEP_PIN, OUTPUT);
-  digitalWrite(CAR_SLEEP_PIN, HIGH);
-
-  /* 按键设置 */
-  button.setPressMs(1500);
-  button.attachDoubleClick(doubleClick);
-  button.attachLongPressStart(longPress);
-
-  /* 电池电压ADC设置 */
-  analogReadResolution(12);
-  updateBatteryInfo();
+  isPair();
 
   /* 初始模式 */
   switch(currentMode) {
