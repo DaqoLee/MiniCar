@@ -10,6 +10,11 @@ typedef struct struct_message {
   int16_t joy1Y;
   int16_t joy2X;
   int16_t joy2Y;
+  uint8_t key_l:1;
+  uint8_t key_r:1;
+  uint8_t key_jl:1;
+  uint8_t key_jr:1;
+  uint8_t count:4;
 } struct_message;
 
 typedef struct struct_ack {

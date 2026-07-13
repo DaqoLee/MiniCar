@@ -7,8 +7,6 @@
 #include "esp_wifi.h"      // ESP32 WiFi底层库
 #include <Preferences.h>   // NVS存储库
 #include "Common/DataProc/DataProc.h" // 数据处理库（未使用可注释）
-#include <WIFIUdp.h> 
-#include "OneButton.h"
 
 using namespace HAL; // 使用HAL命名空间
 
@@ -21,11 +19,6 @@ using namespace HAL; // 使用HAL命名空间
 #define LEFT_JOY_Y_PIN    5   // 左摇杆Y轴引脚
 #define RIGHT_JOY_X_PIN   2   // 右摇杆X轴引脚
 #define RIGHT_JOY_Y_PIN   1   // 右摇杆Y轴引脚
-
-#define LEFT_KEY_PIN   45   // 左边肩键
-#define RIGHT_JOY_KEY_PIN   3   // 右摇杆中键
-#define RIGHT_KEY_PIN   46   // 左边肩键
-#define BOTTOM_KEY_PIN   13//45   // 左边肩键
 
 // 1.2 摇杆默认校准参数（按左右区分，初始值）
 // 左摇杆默认范围
@@ -62,38 +55,6 @@ static uint8_t currentPairedIndex = 0;              // 当前选中的配对设�
 static bool isDevicePaired = false;                 // 是否已配对
 static int16_t sendSuccessCount = 0;                // 数据发送成功计数
 static const uint8_t defaultReceiverMac[] = {0x0C, 0x4E, 0xA0, 0x21, 0x29, 0x3C}; // 默认接收端MAC
-WiFiUDP Udp;
-const char* wifi_SSID="csmy102";  //存储AP的名称信息
-const char* wifi_Password="asdfghjkl";  //存储AP的密码信息
-
-// const char* wifi_SSID="HUAWEI-DFP";  //存储AP的名称信息
-// const char* wifi_Password="asdfghjkl";  //存储AP的密码信息
-
-uint16_t udp_port=1123;  //存储需要监听的端口号
-IPAddress remote_IP(192,168,0,60);// 自定义远程监听 IP 地址
-uint16_t remote_port=1122; 
-
-IPAddress remote_IP_T1(192,168,0,88);// 自定义远程监听 IP 地址 88
-uint16_t remote_port_T1=8888; 
-
-IPAddress remote_IP_T2(192,168,0,94);// 自定义远程监听 IP 地址 88
-uint16_t remote_port_T2=8888; 
-
-IPAddress remote_IP_L1(192,168,0,93);// 自定义远程监听 IP 地址 88
-uint16_t remote_port_L1=8888; 
-
-uint8_t toy = 0;
-uint8_t toy_mode = 0;
-uint8_t button_flag = 0;
-
-// Setup a new OneButton on pin PIN_INPUT2.
-OneButton button1(BOTTOM_KEY_PIN, true);
-// Setup a new OneButton on pin PIN_INPUT2.
-OneButton button2(RIGHT_JOY_KEY_PIN, true);
-
-OneButton button3(LEFT_KEY_PIN, true);
-// Setup a new OneButton on pin PIN_INPUT2.
-OneButton button4(RIGHT_KEY_PIN, true);
 
 // 摇杆校准数据（索引0=左摇杆，索引1=右摇杆，明确区分）
 static Joystick_Calibrate_t joyCalibData[2] = {
@@ -153,61 +114,7 @@ static Preferences nvsStorage;
 // 3.5 ESP-NOW接收回调函数
 void OnDataRecv(const uint8_t* mac, const uint8_t* incomingData, int len);
 
-void click() {
-    if (toy == 0)
-    {
-        if (joyData.count > 5)
-        {
-            joyData.count = 0;
-        }
-        else
-        {
-            joyData.count++;
-        } 
-        Serial.println(joyData.count);
-    }
-    else
-    {
-        // if (toy_mode > 1)
-        // {
-        //     toy_speed = 0;
-        // }
-        // else
-        // {
-        //     toy_speed++;
-        // } 
-        toy_mode = 1;
-        button_flag = 1;
-        
-        Serial.println(toy_mode);
-    }
-} 
 
-void click_3() {
-    
-    if (toy > 3)
-    {
-        toy = 0;
-    }
-    else
-    {
-        toy++;
-    } 
-  Serial.println(toy);
-} 
-void click_4() {
-   
-    if (toy_mode > 3)
-    {
-        toy_mode = 2;
-    }
-    else
-    {
-        toy_mode++;
-    } 
-    button_flag = 1;
-  Serial.println(toy_mode+'0');
-} 
 // ==============================================================================
 // 4. 模块实现（全量替换为左右摇杆命名）
 // ==============================================================================
@@ -221,40 +128,20 @@ void click_4() {
 void HAL::Remote_Init()
 {
     // WiFi配置：STA模式，关闭休眠（保证ESP-NOW稳定性）
-    // WiFi.mode(WIFI_STA);
-    // WiFi.setSleep(false);
-    // WiFi.disconnect(); // 断开STA连接（仅用ESP-NOW）
-
-    // // 初始化ESP-NOW
-    // if (esp_now_init() != ESP_OK) {
-    //     Serial.println("[Remote] ESP-NOW初始化失败!");
-    //     return;
-    // }
-    // esp_now_register_recv_cb(OnDataRecv); // 注册接收回调
-
-    // // 加载已配对设备信息并打印
-    // loadPairedDevices();
-    // listPairedDevices();
-
     WiFi.mode(WIFI_STA);
-    WiFi.begin(wifi_SSID, wifi_Password);
-    while (!WiFi.isConnected())
-    {
-        delay(500);
-        Serial.print(".");
+    WiFi.setSleep(false);
+    WiFi.disconnect(); // 断开STA连接（仅用ESP-NOW）
+
+    // 初始化ESP-NOW
+    if (esp_now_init() != ESP_OK) {
+        Serial.println("[Remote] ESP-NOW初始化失败!");
+        return;
     }
-    Serial.println("Connected");
-    Serial.print("IP Address:");
-    Serial.println(WiFi.localIP());
+    esp_now_register_recv_cb(OnDataRecv); // 注册接收回调
 
-    button1.attachClick(click);
-    button2.attachClick(click);
-    button3.attachClick(click_3);
-    button4.attachClick(click_4);    
-    Udp.begin(udp_port);
-    Serial.print("UDP Listening on port: ");
-    Serial.println(udp_port);
-
+    // 加载已配对设备信息并打印
+    loadPairedDevices();
+    listPairedDevices();
 
     Serial.println("[Remote] 遥控器初始化完成");
 }
@@ -289,92 +176,43 @@ void HAL::Remote_SetCalibrateStep(CalibrateMode_t step)
  */
 void HAL::Remote_Update()
 {
-    static uint8_t data[8]={0};
     // 未配对：发送广播配对请求（间隔5秒）
-    // if (!isDevicePaired) {
-    //     Serial.println("[Remote] 发送配对请求...");
+    if (!isDevicePaired) {
+        Serial.println("[Remote] 发送配对请求...");
         
-    //     struct_pair pairReq;
-    //     strncpy(pairReq.type, "PAIRING", sizeof(pairReq.type)-1);
-    //     pairReq.data_len = 0; // 暂不携带附加数据
+        struct_pair pairReq;
+        strncpy(pairReq.type, "PAIRING", sizeof(pairReq.type)-1);
+        pairReq.data_len = 0; // 暂不携带附加数据
 
-    //     // 广播地址（所有设备接收）
-    //     uint8_t broadcastMac[] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
-    //     esp_err_t result = esp_now_send(broadcastMac, (uint8_t*)&pairReq, sizeof(pairReq));
+        // 广播地址（所有设备接收）
+        uint8_t broadcastMac[] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
+        esp_err_t result = esp_now_send(broadcastMac, (uint8_t*)&pairReq, sizeof(pairReq));
 
-    //     if (result == ESP_OK) {
-    //         Serial.println("[Remote] 配对请求发送成功");
-    //     } else {
-    //         Serial.printf("[Remote] 配对请求发送失败，错误码：%d\n", result);
-    //     }
-    //     delay(PAIR_REQ_INTERVAL); // 控制发送频率
-    //     return;
-    // }
+        if (result == ESP_OK) {
+            Serial.println("[Remote] 配对请求发送成功");
+        } else {
+            Serial.printf("[Remote] 配对请求发送失败，错误码：%d\n", result);
+        }
+        delay(PAIR_REQ_INTERVAL); // 控制发送频率
+        return;
+    }
 
     // 已配对（摇杆模式）：发送左/右摇杆数据
     if (currentMode == MODE_JOYSTICK) {
-        // esp_err_t result = esp_now_send(
-        //     pairedDevices[currentPairedIndex].mac, 
-        //     (uint8_t*)&joyData, // 发送的是包含left/right的摇杆数据
-        //     sizeof(joyData)
-        // );
+        esp_err_t result = esp_now_send(
+            pairedDevices[currentPairedIndex].mac, 
+            (uint8_t*)&joyData, // 发送的是包含left/right的摇杆数据
+            sizeof(joyData)
+        );
 
         // 更新发送成功计数（限制范围：-50 ~ 200）
-        // if (result == ESP_OK) {
-        //     sendSuccessCount = (sendSuccessCount >= 200) ? 200 : sendSuccessCount + 1;
+        if (result == ESP_OK) {
+            sendSuccessCount = (sendSuccessCount >= 200) ? 200 : sendSuccessCount + 1;
 
-        // } else {
-        //     sendSuccessCount = (sendSuccessCount <= -50) ? -50 : sendSuccessCount - 10;
-        // }
-        // Udp.beginPacket(remote_IP, remote_port);
-        // Udp.write(joyData.data,  sizeof(joyData.data));
-        // Udp.println();
-        // Udp.endPacket();
-
-        switch (toy)
-        {
-        case 0:
-            Udp.beginPacket(remote_IP, remote_port);
-            Udp.write(joyData.data,  sizeof(joyData.data));
-            Udp.println();
-            Udp.endPacket();
-            break;
-        case 1:
-            /* code */
-            if (button_flag == 1)
-            {
-                Udp.beginPacket(remote_IP_L1, remote_port_L1);
-                Udp.write('0');
-                // Udp.println();
-                Udp.endPacket();
-                button_flag = 0;
-            }
-            break;
-        case 2:
- if (button_flag == 1)
-            {
-                Udp.beginPacket(remote_IP_T2, remote_port_T2);
-                Udp.write(toy_mode+'0');
-                // Udp.println();
-                Udp.endPacket();
-                button_flag = 0;
-            }
-             break;
-        case 3:
-            /* code */
-            if (button_flag == 1)
-            {
-                Udp.beginPacket(remote_IP_T1, remote_port_T1);
-                Udp.write(toy_mode+'0');
-                // Udp.println();
-                Udp.endPacket();
-                button_flag = 0;
-            }
-            break;       
-        default:
-            break;
+        } else {
+            sendSuccessCount = (sendSuccessCount <= -50) ? -50 : sendSuccessCount - 10;
         }
-        
+
         if ( ConnectInfoCommitFunc != nullptr) {
             ConnectInfoCommitFunc(&sendSuccessCount, ConnectUserData);
                 //   Serial.println("[Calibrate]CalibrateInfoCommitFunc");
@@ -397,7 +235,6 @@ void HAL::Joystick_Init()
     // 设置右摇杆引脚为模拟输入
     pinMode(RIGHT_JOY_X_PIN, INPUT);
     pinMode(RIGHT_JOY_Y_PIN, INPUT);
-    pinMode(LEFT_KEY_PIN, INPUT_PULLUP);
 
     analogReadResolution(12); // 设置AD采样精度为12位（0~4095）
     loadJoyCalibrateData();   // 加载已保存的左/右摇杆校准数据
@@ -421,16 +258,6 @@ void HAL::Joystick_Update()
     uint16_t rightJoyX = analogRead(RIGHT_JOY_X_PIN);
     uint16_t rightJoyY = analogRead(RIGHT_JOY_Y_PIN);
 
-    // if (digitalRead(LEFT_KEY_PIN) == LOW){
-    //     joyData.key_l = 1;
-    // }
-    // else{
-    //     joyData.key_l = 0;
-    // }
-    button1.tick();
-    button2.tick();
-    button3.tick();
-    button4.tick();
     switch (currentMode)
     {
     case MODE_JOYSTICK:
