@@ -15,6 +15,8 @@
 #define MOTOR_A_PWM 6
 #define MOTOR_B_PWM 7
 #define STEERING_PIN 10
+#define DUMP_PIN_1 20
+#define DUMP_PIN_2 21
 // #define CAR_SLEEP_PIN 5
 #define POWER_KEY_PIN 1
 #define BATTERY_PIN 0
@@ -62,11 +64,18 @@ volatile OperationMode currentMode = MODE_JOYSTICK;
 
 
 // 舵机参数
-const int servoMin = 950;
-const int servoMax = 1750;
-const int servoCenter = 1350;
+const int servoMin = 900;
+const int servoMax = 2100;
+const int servoCenter = 1500;
 int currentSteering = servoCenter;
 Servo myservo;
+
+// 车斗升降舵机参数（中心1500us，最大2100us，最小900us）
+const int dumpMin = 900;
+const int dumpMax = 2100;
+const int dumpCenter = 1500;
+Servo dumpServo1, dumpServo2;
+int currentDumpPos = dumpMax;
 
 // 电机控制
 int currentSpeed = 0;
@@ -154,8 +163,12 @@ void initJoystickMode() {
 
 // 初始化手机遥控模式
 void initMobileMode() {
+  Serial.println("DEBUG: initMobileMode called");
   // 设置AP热点
   WiFi.softAP(mobileSsid, password);
+  if (!WiFi.softAPIP()) {
+    Serial.println("ERROR: WiFi AP failed to start!");
+  }
   Serial.print("Mobile AP IP: ");
   Serial.println(WiFi.softAPIP());
   
@@ -186,6 +199,10 @@ void switchMode(OperationMode newMode) {
     case MODE_JOYSTICK: 
     Serial.println("Joystick"); 
     leds[0] =CHSV(HUE_GREEN, 255, 30);
+    /* 切换到摇杆模式，车斗归中 */
+    dumpServo1.writeMicroseconds(dumpMax);
+    dumpServo2.writeMicroseconds(dumpMin);
+    currentDumpPos = dumpMax;
     break;
     case MODE_OTA: 
     Serial.println("OTA");
@@ -237,6 +254,22 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length
         token = strtok(NULL, ",");
         if(token != NULL) {
           int y = atoi(token);
+
+          // 解析第三个值：车斗升降角度（0-180°）
+          token = strtok(NULL, ",");
+          if(token != NULL) {
+            int extra = atoi(token);
+            int dumpPulse1 = map(extra, 0, 180, dumpMax, dumpMin);
+            dumpPulse1 = constrain(dumpPulse1, dumpMin, dumpMax);
+            int dumpPulse2 = map(extra, 0, 180, dumpMin, dumpMax);
+            dumpPulse2 = constrain(dumpPulse2, dumpMin, dumpMax);
+            dumpServo1.writeMicroseconds(dumpPulse1);
+            dumpServo2.writeMicroseconds(dumpPulse2);
+            currentDumpPos = dumpPulse1;
+            Serial.print("Extra servo deg: ");
+            Serial.println(extra);
+          }
+
           
           int steering = map(-x, -100, 100, servoMin, servoMax);
           steering = constrain(steering, servoMin, servoMax);
@@ -413,6 +446,8 @@ void cleanupCurrentMode() {
     case MODE_JOYSTICK:
       esp_now_deinit();
       WiFi.mode(WIFI_OFF);
+      Serial.println("DEBUG: WiFi turned off, waiting before AP mode");
+      delay(200);
       break;
       
     case MODE_OTA:
@@ -498,8 +533,16 @@ void setup() {
   pinMode(POWER_KEY_PIN, INPUT_PULLUP);
    /* 舵机初始化 */
   myservo.setPeriodHertz(50);
-  myservo.attach(STEERING_PIN, 2, 1000, 2000);
+  myservo.attach(STEERING_PIN, 2, 800, 2200);
   myservo.writeMicroseconds(servoCenter); 
+  
+  /* 车斗升降舵机初始化（IO20升、IO21降，镜像控制） */
+  dumpServo1.setPeriodHertz(50);
+  dumpServo1.attach(DUMP_PIN_1, 3, dumpMin, dumpMax);
+  dumpServo2.setPeriodHertz(50);
+  dumpServo2.attach(DUMP_PIN_2, 4, dumpMin, dumpMax);
+  dumpServo1.writeMicroseconds(dumpMax);
+  dumpServo2.writeMicroseconds(dumpMin);
   
    /* 电机PWM初始化 */
   ledcSetup(0, 5000, 8);

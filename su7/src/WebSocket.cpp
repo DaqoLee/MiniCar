@@ -9,6 +9,8 @@ WebSocketsServer webSocket(81); // WebSocket服务器
 
 // 手机遥控模式网页
 void handleMobileRoot() {
+  Serial.println("DEBUG: handleMobileRoot called");
+  Serial.printf("DEBUG: Free heap: %d\n", ESP.getFreeHeap());
   String html = R"rawliteral(
   <!DOCTYPE html>
   <html lang="en">
@@ -92,7 +94,7 @@ void handleMobileRoot() {
         margin-bottom: 5px;
       }
       .battery-info {
-        font-size: 14px;
+        font-size: 16px;
         color: #cccccc;
       }
       .battery-level {
@@ -116,6 +118,61 @@ void handleMobileRoot() {
         font-weight: bold;
         text-shadow: 0 0 3px rgba(0, 0, 0, 0.8);
       }
+      .servo-slider-container {
+        margin-bottom: 20px;
+        background: rgba(255, 255, 255, 0.15);
+        border-radius: 15px;
+        padding: 20px;
+      }
+      .servo-slider-header {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 8px;
+        font-size: 16px;
+        color: #cccccc;
+      }
+      .servo-slider-value {
+        font-size: 24px;
+        font-weight: bold;
+        color: #ffffff;
+      }
+      .servo-slider {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 100%;
+        height: 12px;
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 6px;
+        outline: none;
+        cursor: pointer;
+      }
+      .servo-slider::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 38px;
+        height: 38px;
+        border-radius: 50%;
+        background: linear-gradient(145deg, #3498db, #2980b9);
+        cursor: pointer;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+      }
+      .servo-slider::-moz-range-thumb {
+        width: 38px;
+        height: 38px;
+        border-radius: 50%;
+        border: none;
+        background: linear-gradient(145deg, #3498db, #2980b9);
+        cursor: pointer;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+      }
+      .slider-labels {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 6px;
+        font-size: 13px;
+        color: #999999;
+      }
+
       .joystick-container {
         position: relative;
         width: 300px;
@@ -212,6 +269,19 @@ void handleMobileRoot() {
         </div>
       </div>
       
+      <!-- 车斗升降控制 -->
+      <div class="servo-slider-container">
+        <div class="servo-slider-header">
+          <span>车斗升降</span>
+          <span class="servo-slider-value" id="servoSliderValue">0°</span>
+        </div>
+        <input type="range" class="servo-slider" id="servoSlider" min="0" max="180" value="0">
+        <div class="slider-labels">
+          <span>最低</span>
+          <span>最高</span>
+        </div>
+      </div>
+      
       <div class="status-panel">
         <div class="status-item">
           <div class="status-label">Steering</div>
@@ -246,6 +316,9 @@ void handleMobileRoot() {
       const steeringWheel = document.getElementById('steeringWheel');
       let joystickPos = { x: 0, y: 0 };
       let isDragging = false;
+      let currentXPercent = 0;
+      let currentYPercent = 0;
+      let dumpServoValue = 0;
       
       // 初始化WebSocket连接
       function initWebSocket() {
@@ -309,7 +382,7 @@ void handleMobileRoot() {
       // 发送控制命令
       function sendCommand(x, y) {
         if (isConnected) {
-          const command = `${x},${y}`;
+          const command = `${x},${y},${dumpServoValue}`;
           websocket.send(command);
           
           // 更新UI
@@ -343,6 +416,8 @@ void handleMobileRoot() {
         joystick.style.transform = 'translate(0, 0)';
         sendCommand(0, 0);
         joystickPos = { x: 0, y: 0 };
+        currentXPercent = 0;
+        currentYPercent = 0;
         
         // 重置UI
         document.getElementById('steeringValue').textContent = '90°';
@@ -383,6 +458,8 @@ void handleMobileRoot() {
         // 转换为百分比 (-100到100)
         const xPercent = Math.round(mapRange(joystickPos.x, -centerX + 50, centerX - 50, -100, 100));
         const yPercent = Math.round(mapRange(joystickPos.y, -centerY + 50, centerY - 50, -100, 100));
+        currentXPercent = xPercent;
+        currentYPercent = yPercent;
         
         sendCommand(xPercent, yPercent);
       }
@@ -407,6 +484,13 @@ void handleMobileRoot() {
         });
         document.addEventListener('touchend', stopDrag);
         document.addEventListener('touchcancel', stopDrag);
+
+        // 舵机滑条事件
+        document.getElementById('servoSlider').addEventListener('input', function() {
+          dumpServoValue = parseInt(this.value);
+          document.getElementById('servoSliderValue').textContent = dumpServoValue + '°';
+          sendCommand(currentXPercent, currentYPercent);
+        });
       }
       
       // 页面加载时初始化
