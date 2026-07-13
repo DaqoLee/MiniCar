@@ -171,6 +171,18 @@ typedef struct
    CalibrateMode_t step = READ_MID;
 } Remote_Info_t;
 
+#define MAX_DEVICE_LIST_COUNT 10
+typedef struct
+{
+    uint8_t count;
+    uint8_t currentIndex;
+    struct
+    {
+        uint8_t mac[6];
+        char name[32];
+    } devices[MAX_DEVICE_LIST_COUNT];
+} DeviceList_Info_t;
+
 }
 
 #endif

@@ -19,3 +19,5 @@ DP_DEF(Calibrate, sizeof(HAL::Joystick_Calibrate_t)*2);
 DP_DEF(CarPower, sizeof(uint8_t));
 DP_DEF(Connect, sizeof(int16_t));
 DP_DEF(Remote, 0);
+DP_DEF(DeviceList, sizeof(DataProc::DeviceList_Info_t));
+DP_DEF(DeviceSwitch, 0);

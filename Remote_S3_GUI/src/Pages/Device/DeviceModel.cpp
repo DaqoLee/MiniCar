@@ -1,4 +1,6 @@
 #include "DeviceModel.h"
+#include <Arduino.h>
+#include "Common/HAL/HAL.h"
 #include <stdio.h>
 
 using namespace Page;
@@ -6,19 +8,9 @@ using namespace Page;
 void DeviceModel::Init()
 {
     account = new Account("DeviceModel", DataProc::Center(), 0, this);
-
-    account->Subscribe("SportStatus");
-    account->Subscribe("GPS");
-    account->Subscribe("MAG");
-    account->Subscribe("IMU");
-    account->Subscribe("Joystick");
-    account->Subscribe("Clock");
-    account->Subscribe("Power");
-    account->Subscribe("Storage");
+    account->Subscribe("DeviceList");
     account->Subscribe("StatusBar");
     account->Subscribe("Remote");
-
-    SetRemoteMode(DataProc::OperationMode_t::MODE_OTA);
 }
 
 void DeviceModel::Deinit()
@@ -30,167 +22,42 @@ void DeviceModel::Deinit()
     }
 }
 
-void DeviceModel::GetSportInfo(
-    float* trip,
-    char* time, uint32_t len,
-    float* maxSpd
-)
+void DeviceModel::GetDeviceList(DataProc::DeviceList_Info_t* info)
 {
-    HAL::SportStatus_Info_t sport = { 0 };
-    account->Pull("SportStatus", &sport, sizeof(sport));
-    *trip = sport.totalDistance / 1000;
-    // DataProc::MakeTimeString(sport.totalTime, time, len);
-    *maxSpd = sport.speedMaxKph;
+    // Try DataCenter first, fall back to direct HAL call if Pull fails
+    if (account->Pull("DeviceList", info, sizeof(DataProc::DeviceList_Info_t)) != Account::RES_OK) {
+        // Direct HAL fallback
+        info->count = HAL::Remote_GetDeviceCount();
+        Serial.printf("[DeviceModel] Pull failed, fallback HAL count=%d\n", info->count);
+        info->currentIndex = HAL::Remote_GetCurrentDeviceIndex();
+        for (int i = 0; i < info->count && i < MAX_DEVICE_LIST_COUNT; i++) {
+            char macStr[18] = {0};
+            HAL::Remote_GetDeviceInfo(i, info->devices[i].name,
+                sizeof(info->devices[i].name), macStr, sizeof(macStr));
+            HAL::Remote_GetDeviceMAC(i, info->devices[i].mac);
+        }
+    }
 }
 
-void DeviceModel::GetGPSInfo(
-    float* lat,
-    float* lng,
-    float* alt,
-    char* utc, uint32_t len,
-    float* course,
-    float* speed
-)
+void DeviceModel::SwitchDevice(uint8_t index)
 {
-    HAL::GPS_Info_t gps = { 0 };
-    account->Pull("GPS", &gps, sizeof(gps));
-    *lat = (float)gps.latitude;
-    *lng = (float)gps.longitude;
-    *alt = gps.altitude;
-    snprintf(
-        utc, len,
-        "%d-%d-%d\n%02d:%02d:%02d",
-        gps.clock.year,
-        gps.clock.month,
-        gps.clock.day,
-        gps.clock.hour,
-        gps.clock.minute,
-        gps.clock.second
-    );
-    *course = gps.course;
-    *speed = gps.speed;
+    Serial.printf("[DeviceModel] SwitchDevice: index=%d\n", index);
+    HAL::Remote_SwitchDevice(index);
 }
 
-void DeviceModel::GetMAGInfo(
-    float* dir,
-    int* x,
-    int* y,
-    int* z
-)
+void DeviceModel::EnterPairingMode()
 {
-    HAL::MAG_Info_t mag = { 0 };
-
-    account->Pull("MAG", &mag, sizeof(mag));
-
-    *dir = 0;
-    *x = mag.x;
-    *y = mag.y;
-    *z = mag.z;
-}
-
-void DeviceModel::GetIMUInfo(
-    int* step,
-    char* info, uint32_t len
-)
-{
-    // HAL::IMU_Info_t imu = { 0 };
-
-    // account->Pull("IMU", &imu, sizeof(imu));
-    // *step = imu.steps;
-    // snprintf(
-    //     info,
-    //     len,
-    //     "%d\n%d\n%d\n%d\n%d\n%d",
-    //     imu.ax,
-    //     imu.ay,
-    //     imu.az,
-    //     imu.gx,
-    //     imu.gy,
-    //     imu.gz
-    // );
-
-    HAL::Joystick_Info_t joystick = { 0 };
-
-    account->Pull("Joystick", &joystick, sizeof(joystick));
-  
-    snprintf(
-        info,
-        len,
-        "%d\n%d\n%d\n%d",
-        joystick.left_x,
-        joystick.left_y,
-        joystick.right_x,
-        joystick.right_y
-    );
-}
-
-void DeviceModel::GetRTCInfo(
-    char* dateTime, uint32_t len
-)
-{
-    HAL::Clock_Info_t clock = { 0 };
-    account->Pull("Clock", &clock, sizeof(clock));
-    snprintf(
-        dateTime,
-        len,
-        "%d-%d-%d\n%02d:%02d:%02d",
-        clock.year,
-        clock.month,
-        clock.day,
-        clock.hour,
-        clock.minute,
-        clock.second
-    );
-}
-
-void DeviceModel::GetBatteryInfo(
-    int* usage,
-    float* voltage,
-    char* state, uint32_t len
-)
-{
-    HAL::Power_Info_t power = { 0 };
-    account->Pull("Power", &power, sizeof(power));
-    *usage = power.usage;
-    *voltage = power.voltage / 1000.0f;
-    strncpy(state, power.isCharging ? "CHARGE" : "DISCHARGE", len);
-    state[len - 1] = '\0';
-}
-
-void DeviceModel::GetStorageInfo(
-    bool* detect,
-    const char** type,
-    char* usage, uint32_t len
-)
-{
-    DataProc::Storage_Basic_Info_t info = { 0 };
-    account->Pull("Storage", &info, sizeof(info));
-    *detect = info.isDetect;
-    *type = info.type;
-    snprintf(
-        usage, len,
-        "%0.1f GB",
-        info.totalSizeMB / 1024.0f
-    );
+    DataProc::Remote_Info_t info;
+    DATA_PROC_INIT_STRUCT(info);
+    info.mode = DataProc::OperationMode_t::MODE_PAIR;
+    account->Notify("Remote", &info, sizeof(info));
 }
 
 void DeviceModel::SetStatusBarStyle(DataProc::StatusBar_Style_t style)
 {
     DataProc::StatusBar_Info_t info;
     DATA_PROC_INIT_STRUCT(info);
-
     info.cmd = DataProc::STATUS_BAR_CMD_SET_STYLE;
     info.param.style = style;
-
     account->Notify("StatusBar", &info, sizeof(info));
-}
-
-void DeviceModel::SetRemoteMode(DataProc::OperationMode_t mode)
-{
-    DataProc::Remote_Info_t info;
-    DATA_PROC_INIT_STRUCT(info);
-
-    info.mode = mode;
-   
-    account->Notify("Remote", &info, sizeof(info));
 }

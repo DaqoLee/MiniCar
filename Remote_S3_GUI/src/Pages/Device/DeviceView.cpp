@@ -1,14 +1,17 @@
 #include "DeviceView.h"
 #include <cstdio>
+#include <cstdlib>
 using namespace Page;
 
-#define ITEM_HEIGHT_MIN   100
+#define ITEM_HEIGHT_MIN   80
 #define ITEM_PAD          ((LV_VER_RES - ITEM_HEIGHT_MIN) / 2)
+
+static lv_obj_t* g_root = nullptr;
 
 void DeviceView::Create(lv_obj_t* root)
 {
+    g_root = root;
     lv_obj_set_style_pad_ver(root, ITEM_PAD, 0);
-
     lv_obj_set_flex_flow(root, LV_FLEX_FLOW_COLUMN);
     lv_obj_set_flex_align(
         root,
@@ -16,142 +19,105 @@ void DeviceView::Create(lv_obj_t* root)
         LV_FLEX_ALIGN_START,
         LV_FLEX_ALIGN_CENTER
     );
-
     Style_Init();
-
-    /* Item Sport */
-    Item_Create(
-        &ui.home,
-        root,
-        "01",
-        "device",
-
-        " \n"
-        " \n"
-        " "
-    );
-
-    /* Item GPS */
-    Item_Create(
-        &ui.calibrate,
-        root,
-        "02",
-        "device",
-
-        " \n"
-        " \n"
-        " \n"
-        " \n"
-        " \n"
-        " "
-    );
-
-    /* Item MAG */
-    Item_Create(
-        &ui.pair,
-        root,
-        "03",
-        "device",
-
-        " \n"
-        " \n"
-        " \n"
-        " "
-    );
-
-    /* Item IMU */
-    Item_Create(
-        &ui.device,
-        root,
-        "04",
-        "device",
-
-        " \n"
-        " \n"
-        " \n"
-        " \n"
-        " \n"
-        " \n"
-        " "
-    );
-
-    /* Item Battery */
-    Item_Create(
-        &ui.battery,
-        root,
-        "05",
-        "device",
-
-        " \n"
-        " \n"
-        " "
-    );
-
-    /* Item System */
-    Item_Create(
-        &ui.system,
-        root,
-        "06",
-        "device",
-
-        " \n"
-        " \n"
-        " \n"
-        " \n"
-        " \n\n"
-        " \n"
-    );
-
-    Group_Init();
-}
-
-void DeviceView::Group_Init()
-{
-    lv_group_t* group = lv_group_get_default();
-    lv_group_set_wrap(group, true);
-    lv_group_set_focus_cb(group, onFocus);
-
-    item_t* item_grp = ((item_t*)&ui);
-
-    /* Reverse adding to group makes encoder operation more comfortable */
-    for (int i = sizeof(ui) / sizeof(item_t) - 1; i >= 0; i--)
-    {
-        lv_group_add_obj(group, item_grp[i].icon);
-    }
-
-    lv_group_focus_obj(item_grp[0].icon);
+    ui.itemCount = 0;
+    memset(ui.items, 0, sizeof(ui.items));
 }
 
 void DeviceView::Delete()
 {
-    // lv_group_set_focus_cb(lv_group_get_default(), nullptr);
-    // Style_Reset();
+    // Delete all item containers
+    for (int i = 0; i < ui.itemCount; i++) {
+        if (ui.items[i].cont) {
+            lv_obj_del(ui.items[i].cont);
+        }
+    }
+    memset(ui.items, 0, sizeof(ui.items));
+    ui.itemCount = 0;
+    // Don't clear focus callback - other pages may need it
+    Style_Reset();
+}
+
+void DeviceView::RebuildItems(int count)
+{
+    // Delete old items
+    for (int i = 0; i < ui.itemCount; i++) {
+        if (ui.items[i].cont) {
+            lv_obj_del(ui.items[i].cont);
+        }
+    }
+    memset(ui.items, 0, sizeof(ui.items));
+    ui.itemCount = 0;
+    
+    if (count > MAX_DEVICE_ITEMS) count = MAX_DEVICE_ITEMS;
+    if (count < 0) count = 0;
+    
+    // Create items directly on g_root
+    for (int i = 0; i < count; i++) {
+        if (i >= MAX_DEVICE_ITEMS) break;
+        
+        char idxStr[8] = {0};
+        const char* img = "device";
+        
+        if (i < count - 2) {
+            // Device entry
+            snprintf(idxStr, sizeof(idxStr), "D%d", i + 1);
+        } else if (i == count - 2) {
+            // Pair entry
+            snprintf(idxStr, sizeof(idxStr), "ADD");
+            img = "pair";
+        } else {
+            // Back entry
+            snprintf(idxStr, sizeof(idxStr), "BCK");
+            img = "home";
+        }
+        
+        Item_Create(
+            &ui.items[ui.itemCount],
+            g_root,
+            idxStr,
+            img,
+            " "  // placeholder, updated later
+        );
+        ui.itemCount++;
+    }
+    
+}
+
+void DeviceView::GroupReset()
+{
+    lv_group_t* group = lv_group_get_default();
+    if (!group) return;
+    
+    lv_group_set_wrap(group, true);
+    lv_group_set_focus_cb(group, onFocus);
+    
+    lv_group_remove_all_objs(group);
+    
+    for (int i = ui.itemCount - 1; i >= 0; i--) {
+        lv_group_add_obj(group, ui.items[i].icon);
+    }
+    
+    if (ui.itemCount > 0) {
+        lv_group_focus_obj(ui.items[0].icon);
+    }
 }
 
 void DeviceView::SetScrollToY(lv_obj_t* obj, lv_coord_t y, lv_anim_enable_t en)
 {
     lv_coord_t scroll_y = lv_obj_get_scroll_y(obj);
     lv_coord_t diff = -y + scroll_y;
-
-    lv_obj_scroll_by(obj, 0, diff, en);
-}
-
-void DeviceView::SetScrollToX(lv_obj_t* obj, lv_coord_t x, lv_anim_enable_t en)
-{
-    lv_coord_t scroll_x = lv_obj_get_scroll_x(obj);
-    lv_coord_t diff = -x + scroll_x;
-
     lv_obj_scroll_by(obj, 0, diff, en);
 }
 
 void DeviceView::onFocus(lv_group_t* g)
 {
     lv_obj_t* icon = lv_group_get_focused(g);
+    if (!icon) return;
     lv_obj_t* cont = lv_obj_get_parent(icon);
+    if (!cont) return;
     lv_coord_t y = lv_obj_get_y(cont);
     lv_obj_scroll_to_y(lv_obj_get_parent(cont), y, LV_ANIM_ON);
-    // lv_coord_t x = lv_obj_get_x(cont);
-    // lv_obj_scroll_to_x(lv_obj_get_parent(cont), x, LV_ANIM_ON);
 }
 
 void DeviceView::Style_Init()
@@ -169,27 +135,18 @@ void DeviceView::Style_Init()
     lv_style_set_border_width(&style.focus, 2);
     lv_style_set_border_color(&style.focus, lv_color_hex(0xff931e));
 
-    static const lv_style_prop_t style_prop[] =
-    {
+    static const lv_style_prop_t style_prop[] = {
         LV_STYLE_WIDTH,
         LV_STYLE_PROP_INV
     };
-
     static lv_style_transition_dsc_t trans;
-    lv_style_transition_dsc_init(
-        &trans,
-        style_prop,
-        lv_anim_path_overshoot,
-        200,
-        0,
-        nullptr
-    );
+    lv_style_transition_dsc_init(&trans, style_prop, lv_anim_path_overshoot, 200, 0, nullptr);
     lv_style_set_transition(&style.focus, &trans);
     lv_style_set_transition(&style.icon, &trans);
 
     lv_style_init(&style.info);
     lv_style_set_text_font(&style.info, ResourcePool::GetFont("bahnschrift_13"));
-    lv_style_set_text_color(&style.info, lv_color_hex(0x999999));
+    lv_style_set_text_color(&style.info, lv_color_hex(0xcccccc));
 
     lv_style_init(&style.data);
     lv_style_set_text_font(&style.data, ResourcePool::GetFont("bahnschrift_13"));
@@ -216,7 +173,6 @@ void DeviceView::Item_Create(
     lv_obj_enable_style_refresh(false);
     lv_obj_remove_style_all(cont);
     lv_obj_set_width(cont, 220);
-
     lv_obj_clear_flag(cont, LV_OBJ_FLAG_SCROLLABLE);
     item->cont = cont;
 
@@ -225,11 +181,9 @@ void DeviceView::Item_Create(
     lv_obj_enable_style_refresh(false);
     lv_obj_remove_style_all(icon);
     lv_obj_clear_flag(icon, LV_OBJ_FLAG_SCROLLABLE);
-
     lv_obj_add_style(icon, &style.icon, 0);
     lv_obj_add_style(icon, &style.focus, LV_STATE_FOCUSED);
     lv_obj_set_style_align(icon, LV_ALIGN_LEFT_MID, 0);
-
     lv_obj_set_flex_flow(icon, LV_FLEX_FLOW_COLUMN);
     lv_obj_set_flex_align(
         icon,
@@ -266,163 +220,9 @@ void DeviceView::Item_Create(
     lv_obj_move_foreground(icon);
     lv_obj_enable_style_refresh(true);
 
-    /* get real max height */
     lv_obj_update_layout(item->labelInfo);
     lv_coord_t height = lv_obj_get_height(item->labelInfo);
     height = LV_MAX(height, ITEM_HEIGHT_MIN);
     lv_obj_set_height(cont, height);
     lv_obj_set_height(icon, height);
-}
-
-void DeviceView::SetSport(
-    float trip,
-    const char* time,
-    float maxSpd
-)
-{
-    lv_label_set_text_fmt(
-        ui.home.labelData,
-        "%0.2fkm\n"
-        "%s\n"
-        "%0.1fkm/h",
-        trip,
-        time,
-        maxSpd
-    );
-}
-
-void DeviceView::SetGPS(
-    float lat,
-    float lng,
-    float alt,
-    const char* utc,
-    float course,
-    float speed
-)
-{
-    lv_label_set_text_fmt(
-        ui.calibrate.labelData,
-        "%0.6f\n"
-        "%0.6f\n"
-        "%0.2fm\n"
-        "%s\n"
-        "%0.1f deg\n"
-        "%0.1fkm/h",
-        lat,
-        lng,
-        alt,
-        utc,
-        course,
-        speed
-    );
-}
-
-void DeviceView::SetMAG(
-    float dir,
-    int x,
-    int y,
-    int z
-)
-{
-    lv_label_set_text_fmt(
-        ui.pair.labelData,
-        "%0.1f deg\n"
-        "%d\n"
-        "%d\n"
-        "%d",
-        dir,
-        x,
-        y,
-        z
-    );
-}
-
-void DeviceView::SetIMU(
-    int step,
-    const char* info
-)
-{
-    // lv_label_set_text_fmt(
-    //     ui.imu.labelData,
-    //     "%d\n"
-    //     "%s",
-    //     step,
-    //     info
-    // );
-
-
-            // 使用静态缓冲区
-    static char buffer[64];
-    //usage = CLAMP(usage, 0, 100);
-    
-    // 先格式化到缓冲区
-    snprintf(buffer, sizeof(buffer),
-        "%d\n%s",
-        1, info);
-    
-    // 然后设置文本
-    lv_label_set_text(ui.device.labelData, buffer);
-}
-
-void DeviceView::SetBattery(
-    int usage,
-    float voltage,
-    const char* state
-)
-{
-    // PM_LOG_INFO("SetBattery params: usage=%d, voltage=%.2f, state=%s", 
-    //             usage, voltage, state ? state : "NULL");
-    // lv_label_set_text_fmt(
-    //     ui.battery.labelData,
-    //     "%d%%\n"
-    //     "%0.2fV\n"
-    //     "%s",
-    //     10,
-    //     3.8f,
-    //     "state"
-    // );
-
-        // 使用静态缓冲区
-    static char buffer[64];
-    
-    if (state == nullptr) {
-        state = "N/A";
-    }
-    
-    //usage = CLAMP(usage, 0, 100);
-    
-    // 先格式化到缓冲区
-    snprintf(buffer, sizeof(buffer),
-        "%d%%\n%0.2fV\n%s",
-        usage, voltage, state);
-    
-    // 然后设置文本
-    lv_label_set_text(ui.battery.labelData, buffer);
-}
-
-
-void DeviceView::SetSystem(
-    const char* firmVer,
-    const char* authorName,
-    const char* lvglVer,
-    const char* bootTime,
-    const char* compilerName,
-    const char* bulidTime
-)
-{
-    lv_label_set_text_fmt(
-        ui.system.labelData,
-        "%s\n"
-        "%s\n"
-        "%s\n"
-        "%s\n"
-        "%s\n"
-        "%s",
-        firmVer,
-        authorName,
-        lvglVer,
-        bootTime,
-        compilerName,
-        bulidTime
-    );
 }

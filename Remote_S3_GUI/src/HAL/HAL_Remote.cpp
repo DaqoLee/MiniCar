@@ -84,6 +84,8 @@ static CommitFunc_t CarPowerInfoCommitFunc = nullptr; // 小车电量信息更�
 static void* CarPowerUserData = nullptr;              // 小车电量回调用户数据
 static CommitFunc_t ConnectInfoCommitFunc = nullptr; // 连接信息更新回调
 static void* ConnectUserData = nullptr;              // 连接回调用户数据
+static CommitFunc_t DeviceListInfoCommitFunc = nullptr; // 设备列表更新回调
+static void* DeviceListUserData = nullptr;              // 设备列表回调用户数据
 // NVS存储对象（不变）
 static Preferences nvsStorage;
 
@@ -142,6 +144,11 @@ void HAL::Remote_Init()
     // 加载已配对设备信息并打印
     loadPairedDevices();
     listPairedDevices();
+    
+    // 通知设备列表更新
+    if (DeviceListInfoCommitFunc != nullptr) {
+        DeviceListInfoCommitFunc(nullptr, DeviceListUserData);
+    }
 
     Serial.println("[Remote] 遥控器初始化完成");
 }
@@ -169,6 +176,123 @@ void HAL::Remote_SetCalibrateStep(CalibrateMode_t step)
     // loadPairedDevices(); // 根据模式重新加载配对信息
     // listPairedDevices();
     Serial.printf("[Remote] 模式切换为：%d\n", step);
+}
+
+/**
+ * @brief 切换到指定索引的已配对设备
+ * @param index 配对设备索引
+ */
+void HAL::Remote_SwitchDevice(uint8_t index)
+{
+    if (index >= MAX_PAIRED_DEVICES) {
+        return;
+    }
+    if (index >= pairedDeviceCount) {
+        Serial.printf("[Remote] 设备索引 %d 无效,当前共 %d 个设备\n", index, pairedDeviceCount);
+        return;
+    }
+    
+    // 切换到新设备
+    currentPairedIndex = index;
+    
+    // 清除旧 Peer 并添加新 Peer
+    esp_now_peer_info_t peerInfo = {0};
+    memcpy(peerInfo.peer_addr, pairedDevices[currentPairedIndex].mac, 6);
+    peerInfo.channel = 0;
+    peerInfo.encrypt = false;
+    peerInfo.ifidx = WIFI_IF_STA;
+    if (esp_now_add_peer(&peerInfo) != ESP_OK) {
+        Serial.println("[Remote] 添加新Peer失败");
+    }
+    
+    // 保存配��信息
+    savePairedDevices();
+    isDevicePaired = true;
+    sendSuccessCount = 0;
+    
+    Serial.printf("[Remote] 切换到设备: %s\n", pairedDevices[currentPairedIndex].name);
+    
+    // 通知设备列表更新
+    if (DeviceListInfoCommitFunc != nullptr) {
+        DeviceListInfoCommitFunc(nullptr, DeviceListUserData);
+    }
+}
+
+/**
+ * @brief 获取已配对设备数量
+ * @return 配对设备数量
+ */
+uint8_t HAL::Remote_GetDeviceCount()
+{
+    return pairedDeviceCount;
+}
+
+/**
+ * @brief 获取当前选中设备的索引
+ * @return 当前设备索引
+ */
+uint8_t HAL::Remote_GetCurrentDeviceIndex()
+{
+    return currentPairedIndex;
+}
+
+/**
+ * @brief 获取指定索引的设备信息
+ * @param index 设备索引
+ * @param name 输出设备名称缓冲区
+ * @param nameLen 名称缓冲区大小
+ * @param macStr 输出MAC地址字符串缓冲区
+ * @param macStrLen MAC字符串缓冲区大小
+ * @return 是否成功获取
+ */
+bool HAL::Remote_GetDeviceInfo(uint8_t index, char* name, uint8_t nameLen, char* macStr, uint8_t macStrLen)
+{
+    if (index >= pairedDeviceCount) {
+        return false;
+    }
+    
+    strncpy(name, pairedDevices[index].name, nameLen - 1);
+    name[nameLen - 1] = '\0';
+    
+    if (macStr != nullptr && macStrLen > 0) {
+        snprintf(macStr, macStrLen, "%02X:%02X:%02X:%02X:%02X:%02X",
+                 pairedDevices[index].mac[0], pairedDevices[index].mac[1],
+                 pairedDevices[index].mac[2], pairedDevices[index].mac[3],
+                 pairedDevices[index].mac[4], pairedDevices[index].mac[5]);
+    }
+    
+    return true;
+}
+
+/**
+ * @brief 获取指定索引设备的MAC地址
+ * @param index 设备索引
+ * @param mac 输出MAC地址缓冲区（6字节）
+ * @return 是否成功
+ */
+bool HAL::Remote_GetDeviceMAC(uint8_t index, uint8_t* mac)
+{
+    if (index >= pairedDeviceCount || mac == nullptr) {
+        return false;
+    }
+    memcpy(mac, pairedDevices[index].mac, 6);
+    return true;
+}
+
+/**
+ * @brief 进入配对模式
+ */
+void HAL::Remote_StartPairing()
+{
+    currentMode = MODE_PAIR;
+    loadPairedDevices();
+    listPairedDevices();
+    Serial.println("[Remote] 进入配对模式");
+    
+    // 通知设备列表更新
+    if (DeviceListInfoCommitFunc != nullptr) {
+        DeviceListInfoCommitFunc(nullptr, DeviceListUserData);
+    }
 }
 
 /**
@@ -212,7 +336,7 @@ void HAL::Remote_Update()
         } else {
             sendSuccessCount = (sendSuccessCount <= -50) ? -50 : sendSuccessCount - 10;
         }
-
+       
         if ( ConnectInfoCommitFunc != nullptr) {
             ConnectInfoCommitFunc(&sendSuccessCount, ConnectUserData);
                 //   Serial.println("[Calibrate]CalibrateInfoCommitFunc");
@@ -356,6 +480,13 @@ void HAL::Connect_SetCommitCallback(CommitFunc_t func, void* userData)
 
 }
 
+void HAL::DeviceList_SetCommitCallback(CommitFunc_t func, void* userData)
+{
+    DeviceListInfoCommitFunc = func;
+    DeviceListUserData = userData;
+
+}
+
 /**
  * @brief 保存配对设备信息到NVS
  */
@@ -384,6 +515,11 @@ void HAL::savePairedDevices()
 
     nvsStorage.end(); // 关闭NVS
     Serial.println("[NVS] 配对设备信息保存完成");
+    
+    // 通知设备列表更新
+    if (DeviceListInfoCommitFunc != nullptr) {
+        DeviceListInfoCommitFunc(nullptr, DeviceListUserData);
+    }
 }
 
 /**
@@ -449,7 +585,22 @@ void HAL::loadPairedDevices()
         }
 
         case MODE_PAIR: {
-            // 配对模式：添加广播地址作为Peer（用于发送配对请求）
+            // 配对模式：先从NVS加载已有设备再添加广播Peer
+            nvsStorage.begin(NVS_PAIR_NAMESPACE, true);
+            pairedDeviceCount = nvsStorage.getUInt("paired_count", 0);
+            if (pairedDeviceCount > MAX_PAIRED_DEVICES) pairedDeviceCount = 0;
+            for (int i = 0; i < pairedDeviceCount; i++) {
+                char macKey[20];
+                snprintf(macKey, sizeof(macKey), "mac_%d", i);
+                nvsStorage.getBytes(macKey, pairedDevices[i].mac, 6);
+                char nameKey[20];
+                snprintf(nameKey, sizeof(nameKey), "name_%d", i);
+                pairedDevices[i].name[31] = '\0';
+                nvsStorage.getString(nameKey, pairedDevices[i].name, 32);
+            }
+            nvsStorage.end();
+            
+            // 添加广播地址作为Peer
             uint8_t broadcastMac[] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
             esp_now_peer_info_t peerInfo = {0};
             memcpy(peerInfo.peer_addr, broadcastMac, 6);
@@ -460,8 +611,7 @@ void HAL::loadPairedDevices()
                 Serial.println("[NVS] 添加广播Peer失败");
             }
             isDevicePaired = false;
-            pairedDeviceCount = 0; // 配对模式下重置配对计数
-            Serial.println("[NVS] 进入配对模式,已添加广播Peer");
+            Serial.printf("[NVS] 进入配对模式,已有%d个设备\n", pairedDeviceCount);
             break;
         }
 
@@ -718,7 +868,7 @@ void OnDataRecv(const uint8_t* mac, const uint8_t* incomingData, int len)
                         pairedDevices[pairedDeviceCount].name[recvPair.data_len] = '\0';
                     } else {
                         snprintf(pairedDevices[pairedDeviceCount].name, sizeof(pairedDevices[pairedDeviceCount].name),
-                                 "Device_%02X%02X", mac[4], mac[5]);
+                                 "ESP");
                     }
 
                     pairedDevices[pairedDeviceCount].lastSeen = millis();
@@ -734,7 +884,7 @@ void OnDataRecv(const uint8_t* mac, const uint8_t* incomingData, int len)
                         pairedDevices[MAX_PAIRED_DEVICES - 1].name[recvPair.data_len] = '\0';
                     } else {
                         snprintf(pairedDevices[MAX_PAIRED_DEVICES - 1].name, sizeof(pairedDevices[MAX_PAIRED_DEVICES - 1].name),
-                                 "Device_%02X%02X", mac[4], mac[5]);
+                                 "ESP");
                     }
 
                     pairedDevices[MAX_PAIRED_DEVICES - 1].lastSeen = millis();

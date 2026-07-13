@@ -10,8 +10,6 @@ namespace Page
 class Device : public PageBase
 {
 public:
-
-public:
     Device();
     virtual ~Device();
 
@@ -27,6 +25,7 @@ public:
 
 private:
     void Update();
+    void RebuildList();
     void AttachEvent(lv_obj_t* obj);
     static void onTimerUpdate(lv_timer_t* timer);
     static void onEvent(lv_event_t* event);

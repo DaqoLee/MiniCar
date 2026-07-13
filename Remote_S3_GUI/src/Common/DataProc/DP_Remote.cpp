@@ -68,3 +68,66 @@ DATA_PROC_INIT_DEF(Connect)
     }, account);
 }
 
+DATA_PROC_INIT_DEF(DeviceList)
+{
+    HAL::DeviceList_SetCommitCallback([](void* info, void* userData){
+        Account* account = (Account*)userData;
+        DataProc::DeviceList_Info_t devInfo;
+        DATA_PROC_INIT_STRUCT(devInfo);
+        
+        devInfo.count = HAL::Remote_GetDeviceCount();
+        devInfo.currentIndex = HAL::Remote_GetCurrentDeviceIndex();
+        
+        for (int i = 0; i < devInfo.count && i < MAX_DEVICE_LIST_COUNT; i++)
+        {
+            char macStr[18] = {0};
+            HAL::Remote_GetDeviceInfo(
+                i,
+                devInfo.devices[i].name,
+                sizeof(devInfo.devices[i].name),
+                macStr, sizeof(macStr)
+            );
+            HAL::Remote_GetDeviceMAC(i, devInfo.devices[i].mac);
+        }
+        
+        return account->Commit(&devInfo, sizeof(devInfo));
+    }, account);
+
+    // 初始化完成后立即推一次设备列表
+    // (HAL::Remote_Init 在 DataProc_Init 之前运行，当时 callback 尚未注册)
+    {
+        DataProc::DeviceList_Info_t devInfo;
+        DATA_PROC_INIT_STRUCT(devInfo);
+        devInfo.count = HAL::Remote_GetDeviceCount();
+        devInfo.currentIndex = HAL::Remote_GetCurrentDeviceIndex();
+        for (int i = 0; i < devInfo.count && i < MAX_DEVICE_LIST_COUNT; i++)
+        {
+            char macStr[18] = {0};
+            HAL::Remote_GetDeviceInfo(i, devInfo.devices[i].name,
+                sizeof(devInfo.devices[i].name), macStr, sizeof(macStr));
+            HAL::Remote_GetDeviceMAC(i, devInfo.devices[i].mac);
+        }
+        account->Commit(&devInfo, sizeof(devInfo));
+    }
+}
+
+static int onDeviceSwitchEvent(Account* account, Account::EventParam_t* param)
+{
+    if (param->event != Account::EVENT_NOTIFY)
+    {
+        return Account::RES_UNSUPPORTED_REQUEST;
+    }
+    if (param->size != sizeof(uint8_t))
+    {
+        return Account::RES_SIZE_MISMATCH;
+    }
+    uint8_t index = *(uint8_t*)param->data_p;
+    HAL::Remote_SwitchDevice(index);
+    return Account::RES_OK;
+}
+
+DATA_PROC_INIT_DEF(DeviceSwitch)
+{
+    account->SetEventCallback(onDeviceSwitchEvent);
+}
+

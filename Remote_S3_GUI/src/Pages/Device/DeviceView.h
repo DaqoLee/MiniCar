@@ -21,60 +21,19 @@ public:
         lv_obj_t* labelData;
     } item_t;
 
+#define MAX_DEVICE_ITEMS 12
+
     struct
     {
-        item_t home;
-        item_t calibrate;
-        item_t pair;
-        item_t device;
-        item_t battery;
-        item_t system;
+        item_t items[MAX_DEVICE_ITEMS];
+        int itemCount;
     } ui;
 
 public:
-    void SetSport(
-        float trip,
-        const char* time,
-        float maxSpd
-    );
-    void SetGPS(
-        float lat,
-        float lng,
-        float alt,
-        const char* utc,
-        float course,
-        float speed
-    );
-    void SetMAG(
-        float dir,
-        int x,
-        int y,
-        int z
-    );
-    void SetIMU(
-        int step,
-        const char* info
-    );
-    void SetRTC(
-        const char* dateTime
-    );
-    void SetBattery(
-        int usage,
-        float voltage,
-        const char* state
-    );
-    void SetSystem(
-        const char* firmVer,
-        const char* authorName,
-        const char* lvglVer,
-        const char* bootTime,
-        const char* compilerName,
-        const char* bulidTime
-    );
-
+    void RebuildItems(int count);
+    void GroupReset();
     void SetScrollToY(lv_obj_t* obj, lv_coord_t y, lv_anim_enable_t en);
-    void SetScrollToX(lv_obj_t* obj, lv_coord_t x, lv_anim_enable_t en);
-    static void onFocus(lv_group_t* e);
+    static void onFocus(lv_group_t* g);
 
 private:
     struct
@@ -100,4 +59,4 @@ private:
 
 }
 
-#endif // !__VIEW_H
+#endif
