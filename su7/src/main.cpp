@@ -74,9 +74,12 @@ Servo myservo;
 const int dumpMin = 900;
 const int dumpMax = 2100;
 const int dumpCenter = 1500;
-const int dumpStep = 100;  // 每次回调步进值（微秒），控制升降速度
+const int dumpStep = 15;  // 每次定时步进值（微秒），配合 dumpInterval(10ms) = 1500µs/s
 Servo dumpServo1, dumpServo2;
 int currentDumpPos = dumpMax;
+int dumpDirection = 0;  // 1=抬升, -1=下降, 0=停止
+unsigned long lastDumpUpdate = 0;
+const int dumpInterval = 10;  // 舵机更新间隔（毫秒），越小越平滑
 
 // 电机控制
 int currentSpeed = 0;
@@ -320,19 +323,13 @@ void onDataRecv(const uint8_t *mac, const uint8_t *data, int len) {
       int motorSpeed = map(rxData.joy1X, 0, 4095, 255, -255);
      setMotorSpeed(motorSpeed);
      
-      // 车斗升降控制：key_r 抬升，key_l 下降（长按缓慢动作）
+      // 车斗升降方向记录，由 loop() 定时平滑执行
       if (rxData.key_r) {
-        currentDumpPos -= dumpStep;
-        if (currentDumpPos < dumpMin) currentDumpPos = dumpMin;
-        dumpServo1.writeMicroseconds(currentDumpPos);
-        dumpServo2.writeMicroseconds(dumpMin + dumpMax - currentDumpPos);
-        // Serial.printf("Dump lifting: %d\n", currentDumpPos);
+        dumpDirection = 1;
       } else if (rxData.key_l) {
-        currentDumpPos += dumpStep;
-        if (currentDumpPos > dumpMax) currentDumpPos = dumpMax;
-        dumpServo1.writeMicroseconds(currentDumpPos);
-        dumpServo2.writeMicroseconds(dumpMin + dumpMax - currentDumpPos);
-        // Serial.printf("Dump lowering: %d\n", currentDumpPos);
+        dumpDirection = -1;
+      } else {
+        dumpDirection = 0;
       }
       
      // Serial.print("angle:");
@@ -631,6 +628,18 @@ void loop() {
       break;
       
     case MODE_JOYSTICK:
+      // 车斗平滑升降：固定间隔步进，不受 ESP-NOW 包间隔影响
+      if (dumpDirection != 0) {
+        unsigned long now = millis();
+        if (now - lastDumpUpdate >= dumpInterval) {
+          lastDumpUpdate = now;
+          currentDumpPos += dumpDirection * dumpStep;
+          if (currentDumpPos < dumpMin) currentDumpPos = dumpMin;
+          if (currentDumpPos > dumpMax) currentDumpPos = dumpMax;
+          dumpServo1.writeMicroseconds(currentDumpPos);
+          dumpServo2.writeMicroseconds(dumpMin + dumpMax - currentDumpPos);
+        }
+      }
       delay(10);
       break;
       

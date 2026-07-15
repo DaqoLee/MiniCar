@@ -46,6 +46,7 @@ using namespace HAL; // 使用HAL命名空间
 #define MAX_JOY_AD_VALUE 4095 // 摇杆AD采样最大值（12位AD）
 #define MAX_PAIRED_DEVICES 10 // 最大配对设备数
 #define PAIR_REQ_INTERVAL 5000 // 配对请求发送间隔（ms）
+#define CONNECT_TIMEOUT_MS 10000  // 连接超时（ms）：超过此时未收到ACK认为断连
 #define NVS_PAIR_NAMESPACE "esnow_multi" // 配对信息NVS命名空间
 #define NVS_CALIB_NAMESPACE "joy_calibrate" // 摇杆校准NVS命名空间
 
@@ -59,6 +60,7 @@ static uint8_t pairedDeviceCount = 0;               // 已配对设备数量
 static uint8_t currentPairedIndex = 0;              // 当前选中的配对设备索引
 static bool isDevicePaired = false;                 // 是否已配对
 static int16_t sendSuccessCount = 0;                // 数据发送成功计数
+static uint32_t lastAckReceiveTime = 0;               // 最近一次收到ACK的时间戳（ms）
 static const uint8_t defaultReceiverMac[] = {0x0C, 0x4E, 0xA0, 0x21, 0x29, 0x3C}; // 默认接收端MAC
 
 // 摇杆校准数据（索引0=左摇杆，索引1=右摇杆，明确区分）
@@ -334,17 +336,15 @@ void HAL::Remote_Update()
             sizeof(joyData)
         );
 
-        // 更新发送成功计数（限制范围：-50 ~ 200）
-        if (result == ESP_OK) {
+        // 基于ACK判定连接：在超时窗口内收到过ACK即视为连接正常
+        if ((millis() - lastAckReceiveTime) < CONNECT_TIMEOUT_MS) {
             sendSuccessCount = (sendSuccessCount >= 200) ? 200 : sendSuccessCount + 1;
-
         } else {
             sendSuccessCount = (sendSuccessCount <= -50) ? -50 : sendSuccessCount - 10;
         }
        
         if ( ConnectInfoCommitFunc != nullptr) {
             ConnectInfoCommitFunc(&sendSuccessCount, ConnectUserData);
-                //   Serial.println("[Calibrate]CalibrateInfoCommitFunc");
         }
     }
 }
@@ -834,9 +834,11 @@ void OnDataRecv(const uint8_t* mac, const uint8_t* incomingData, int len)
             struct_ack recvAck;
             memcpy(&recvAck, incomingData, sizeof(recvAck));
             
+            // 收到ACK，记录时间戳用于连接状态判定
+            lastAckReceiveTime = millis();
+            
             if ( CarPowerInfoCommitFunc != nullptr) {
                 CarPowerInfoCommitFunc(&recvAck.battery, CarPowerUserData);
-                //   Serial.println("[Calibrate]CalibrateInfoCommitFunc");
             }
             Serial.printf("[Recv] 接收端反馈：模式=%d,电量=%d%%\n", recvAck.mode, recvAck.battery);
             break;
