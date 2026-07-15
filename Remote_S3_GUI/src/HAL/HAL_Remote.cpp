@@ -20,6 +20,11 @@ using namespace HAL; // 使用HAL命名空间
 #define RIGHT_JOY_X_PIN   2   // 右摇杆X轴引脚
 #define RIGHT_JOY_Y_PIN   1   // 右摇杆Y轴引脚
 
+#define LEFT_JOY_KEY_PIN   6   // 左摇杆按键
+#define LEFT_SHOULDER_PIN  45  // 左边肩键
+#define RIGHT_JOY_KEY_PIN  3   // 右摇杆按键
+#define RIGHT_SHOULDER_PIN 46  // 右边肩键
+
 // 1.2 摇杆默认校准参数（按左右区分，初始值）
 // 左摇杆默认范围
 #define LEFT_JOY_X_MAX    3400
@@ -359,6 +364,10 @@ void HAL::Joystick_Init()
     // 设置右摇杆引脚为模拟输入
     pinMode(RIGHT_JOY_X_PIN, INPUT);
     pinMode(RIGHT_JOY_Y_PIN, INPUT);
+    pinMode(LEFT_JOY_KEY_PIN, INPUT_PULLUP);
+    pinMode(LEFT_SHOULDER_PIN, INPUT_PULLUP);
+    pinMode(RIGHT_JOY_KEY_PIN, INPUT_PULLUP);
+    pinMode(RIGHT_SHOULDER_PIN, INPUT_PULLUP);
 
     analogReadResolution(12); // 设置AD采样精度为12位（0~4095）
     loadJoyCalibrateData();   // 加载已保存的左/右摇杆校准数据
@@ -381,6 +390,12 @@ void HAL::Joystick_Update()
     uint16_t leftJoyY = analogRead(LEFT_JOY_Y_PIN);
     uint16_t rightJoyX = analogRead(RIGHT_JOY_X_PIN);
     uint16_t rightJoyY = analogRead(RIGHT_JOY_Y_PIN);
+
+    // Read buttons (active-low with pullup)
+    joyData.key_l  = (digitalRead(LEFT_JOY_KEY_PIN) == LOW) ? 1 : 0;
+    joyData.key_r  = (digitalRead(RIGHT_JOY_KEY_PIN) == LOW) ? 1 : 0;
+    joyData.key_jl = (digitalRead(LEFT_SHOULDER_PIN) == LOW) ? 1 : 0;
+    joyData.key_jr = (digitalRead(RIGHT_SHOULDER_PIN) == LOW) ? 1 : 0;
 
     switch (currentMode)
     {

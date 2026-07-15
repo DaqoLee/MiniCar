@@ -74,6 +74,7 @@ Servo myservo;
 const int dumpMin = 900;
 const int dumpMax = 2100;
 const int dumpCenter = 1500;
+const int dumpStep = 100;  // 每次回调步进值（微秒），控制升降速度
 Servo dumpServo1, dumpServo2;
 int currentDumpPos = dumpMax;
 
@@ -307,7 +308,7 @@ void onDataRecv(const uint8_t *mac, const uint8_t *data, int len) {
     case MODE_JOYSTICK:
     {
       static uint16_t count = 200;
-      Serial.printf("rxData: %d,  len: %d \r\n",sizeof(rxData), len);
+      // Serial.printf("rxData: %d,  len: %d \r\n",sizeof(rxData), len);
       if ((sizeof(rxData) != len)){
          myservo.writeMicroseconds(servoCenter); 
          setMotorSpeed(0);
@@ -317,9 +318,24 @@ void onDataRecv(const uint8_t *mac, const uint8_t *data, int len) {
       int servoAngle = map(rxData.joy2Y, 0, 4095, servoMax, servoMin);
       myservo.writeMicroseconds(servoAngle); 
       int motorSpeed = map(rxData.joy1X, 0, 4095, 255, -255);
-      setMotorSpeed(motorSpeed);
+     setMotorSpeed(motorSpeed);
+     
+      // 车斗升降控制：key_r 抬升，key_l 下降（长按缓慢动作）
+      if (rxData.key_r) {
+        currentDumpPos -= dumpStep;
+        if (currentDumpPos < dumpMin) currentDumpPos = dumpMin;
+        dumpServo1.writeMicroseconds(currentDumpPos);
+        dumpServo2.writeMicroseconds(dumpMin + dumpMax - currentDumpPos);
+        // Serial.printf("Dump lifting: %d\n", currentDumpPos);
+      } else if (rxData.key_l) {
+        currentDumpPos += dumpStep;
+        if (currentDumpPos > dumpMax) currentDumpPos = dumpMax;
+        dumpServo1.writeMicroseconds(currentDumpPos);
+        dumpServo2.writeMicroseconds(dumpMin + dumpMax - currentDumpPos);
+        // Serial.printf("Dump lowering: %d\n", currentDumpPos);
+      }
       
-      // Serial.print("angle:");
+     // Serial.print("angle:");
       // Serial.print(servoAngle);
       // Serial.print(" speed:");
       // Serial.println(motorSpeed);
