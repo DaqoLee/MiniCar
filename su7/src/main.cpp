@@ -17,7 +17,7 @@
 #define STEERING_PIN 10
 #define DUMP_PIN_1 20
 #define DUMP_PIN_2 21
-// #define CAR_SLEEP_PIN 5
+#define CAR_SLEEP_PIN 3
 #define POWER_KEY_PIN 1
 #define BATTERY_PIN 0
 #define POWER_PIN 5
@@ -133,12 +133,15 @@ void updateBatteryInfo() {
 // 设置电机速度
 void setMotorSpeed(int speed) {
   if (speed > 0) {  
+    digitalWrite(CAR_SLEEP_PIN, HIGH);
     ledcWrite(0, speed);
     ledcWrite(1, 0);
   } else if (speed < 0) {  
+    digitalWrite(CAR_SLEEP_PIN, HIGH);
     ledcWrite(0, 0);
     ledcWrite(1, -speed);
   } else {  
+    digitalWrite(CAR_SLEEP_PIN, LOW);
     ledcWrite(0, 0);
     ledcWrite(1, 0);
   }
@@ -146,6 +149,7 @@ void setMotorSpeed(int speed) {
 
 // 停止所有电机
 void stopAllMotors() {
+  digitalWrite(CAR_SLEEP_PIN, LOW);
   ledcWrite(0, 0);
   ledcWrite(1, 0);
 }
@@ -558,13 +562,14 @@ void setup() {
   dumpServo2.writeMicroseconds(dumpMin);
   
    /* 电机PWM初始化 */
+  pinMode(CAR_SLEEP_PIN, OUTPUT);
+  digitalWrite(CAR_SLEEP_PIN, LOW);
   ledcSetup(0, 5000, 8);
   ledcAttachPin(MOTOR_A_PWM, 0);
   ledcSetup(1, 5000, 8);
   ledcAttachPin(MOTOR_B_PWM, 1);
   setMotorSpeed(0);
-  // pinMode(CAR_SLEEP_PIN, OUTPUT);
-  // digitalWrite(CAR_SLEEP_PIN, HIGH);
+
 
   /* 按键设置 */
   button.setPressMs(1500);
