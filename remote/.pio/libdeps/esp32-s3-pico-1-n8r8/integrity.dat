@@ -1,0 +1,7 @@
+bblanchon/ArduinoJson @ ^7.4.2
+mathertel/OneButton @ ^2.6.1
+bodmer/TFT_eSPI @ ^2.5.43
+lvgl/lvgl @ ^8.4.0
+fastled/FastLED @ ^3.10.1
+philj404/SimpleSerialShell@^1.0.0
+bodmer/TFT_eWidget @ ^0.0.6
