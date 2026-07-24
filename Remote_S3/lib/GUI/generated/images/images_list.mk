@@ -1,1 +1,0 @@
-GEN_CSRCS += _wifi_RGB565A8_20x20.c
