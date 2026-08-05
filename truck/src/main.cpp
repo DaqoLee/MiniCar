@@ -288,13 +288,11 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length
           speed = constrain(speed, 0, maxSpeed);
           
           if(y > 10) {
-            ledcWrite(0, speed);
-            ledcWrite(1, 0);
+            setMotorSpeed(speed);
             currentSpeed = speed;
           } 
           else if(y < -10) {
-            ledcWrite(0, 0);
-            ledcWrite(1, speed);
+            setMotorSpeed(-speed);
             currentSpeed = -speed;
           } 
           else {
