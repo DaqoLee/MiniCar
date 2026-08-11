@@ -3,7 +3,6 @@
 ## 项目简介
 
 本项目基于ESP32C3设计，板载锂电池无线充电、1路电机驱动、1路舵机驱动、1路RGB。可以使用手机或者自制的遥控器遥控，遥控器支持一键对频，支持OTA更新固件。
-[B站视频--功能演示及介绍](https://www.bilibili.com/)
 
 <img src="https://image.lceda.cn/oshwhub/pullImage/46fe95f5ed8c4f709f3e180d9fa58f3c.jpg" alt="SU7实物图" width="500" />
 
