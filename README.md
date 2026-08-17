@@ -65,17 +65,10 @@ password = "12345678"
 
 <img src="https://image.lceda.cn/oshwhub/pullImage/cd2d800ce104432d9c9da198f771a951.jpg" alt="OTA" width="500" />
 
-## 软件代码
+## 硬件电路
 ### 开源链接
 
-https://github.com/DaqoLee/MiniCar.git
-
-开发环境`VSCode + platformIO`
-- `remote` 遥控器代码
-- `su7` 小车代码
-
-
-<img src="https://image.lceda.cn/oshwhub/pullImage/f03d4f4b1dee4a03b2f125f3df9fd2ec.jpg" alt="git_su7_1" width="500" />
+[开源链接](https://oshwhub.com/daqolee/project_vfoxufca?jlc_vid=FFRYAgUAElULUVVfElVYX1RRFABWX1ZSRFYMAQFfQ1gxVlNeQVhdV1RQQlFaUjtW)
 
 ## 注意事项
 
