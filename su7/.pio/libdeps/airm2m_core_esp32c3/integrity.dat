@@ -1,0 +1,5 @@
+waspinator/AccelStepper@^1.64
+links2004/WebSockets @ ^2.6.1
+mathertel/OneButton @ ^2.6.1
+esp32async/ESPAsyncWebServer @ ^3.7.10
+fastled/FastLED @ ^3.10.1

@@ -1,14 +1,12 @@
-# MiniCar
 
-## 视频链接：
-[B站视频--功能演示及介绍](https://www.bilibili.com/)
+
 ## 项目简介
 
 本项目基于ESP32C3设计，板载锂电池充电、1路电机驱动、3路舵机驱动、1路RGB。可以使用手机或者自制的遥控器遥控，遥控器支持一键对频，支持OTA更新固件。
 
 
-<img src="https://image.lceda.cn/oshwhub/pullImage/65144ac295924a6997e6396ebdbbcd78.png" alt="电控版完整" width="500" />
 
+<img src="https://image.lceda.cn/oshwhub/pullImage/4a791ffd1c7e49deaf5416d81f539f77.jpg" alt="卡车3" width="500" />
 
 ## 项目功能
 
@@ -69,12 +67,28 @@ password = "12345678"
 
 <img src="https://image.lceda.cn/oshwhub/pullImage/cd2d800ce104432d9c9da198f771a951.jpg" alt="OTA" width="500" />
 
-## 软件代码
+## 硬件电路
 
-## 注意事项
+### 开源链接
 
-## 组装流程
+[硬件开源链接](https://oshwhub.com/daqolee/project_tqczetta?jlc_vid=FFRYAgUAElULUVVfElVYX1RRFABWX1ZSRFYMAQFfQ1gxVlNeQVhdV1RQQlFaUjtW)
 
+
+
+## 组装教程
+
+详细的组装教程已经上传，下载附件PDF
 <img src="https://image.lceda.cn/oshwhub/pullImage/cf2e5a20c5cc470386460392ae2d8233.png" alt="接线" width="500" />
 
 ## 实物图
+
+<img src="https://image.lceda.cn/oshwhub/pullImage/27c261d9157a487ea6b293dfdb5f7ce8.jpg" alt="卡车0" width="500" />
+
+### 
+
+<img src="https://image.lceda.cn/oshwhub/pullImage/8200557261e742bdbe4721398f2e3fc1.jpg" alt="卡车1" width="500" />
+
+### 
+
+<img src="https://image.lceda.cn/oshwhub/pullImage/79ae140af2064501ab1becfca5f98ff8.jpg" alt="卡车2" width="500" />
+
