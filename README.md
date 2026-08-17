@@ -77,7 +77,8 @@ password = "12345678"
 
 ## 组装教程
 
-详细的组装教程已经上传，下载附件PDF
+详细的组装教程已经上传，[下载附件PDF](https://oshwhub.com/daqolee/project_tqczetta?jlc_vid=FFRYAgUAElULUVVfElVYX1RRFABWX1ZSRFYMAQFfQ1gxVlNeQVhdV1RQQlFaUjtW)
+
 <img src="https://image.lceda.cn/oshwhub/pullImage/cf2e5a20c5cc470386460392ae2d8233.png" alt="接线" width="500" />
 
 ## 实物图
